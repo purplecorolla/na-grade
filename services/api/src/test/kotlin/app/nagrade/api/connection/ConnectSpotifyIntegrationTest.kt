@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
@@ -57,6 +58,9 @@ class ConnectSpotifyIntegrationTest {
 
     @Autowired
     lateinit var clientRegistrations: ClientRegistrationRepository
+
+    @Autowired
+    lateinit var jdbc: JdbcTemplate
 
     private val password = "fake-password-123"
 
@@ -165,6 +169,26 @@ class ConnectSpotifyIntegrationTest {
         val account = checkNotNull(accounts.findByUserEmailAndProvider(email, "spotify"))
         assertThat(account.refreshToken).isEqualTo("fake-refresh-token")
         assertThat(account.accessTokenExpiresAt).isNotNull()
+    }
+
+    @Test
+    fun `the database only holds encrypted tokens`() {
+        val email = newEmail()
+        connect(sessionFor(email))
+
+        // Raw SELECT, bypassing the JPA converter: what a database leak would expose
+        val row = jdbc.queryForMap(
+            """
+            SELECT a.access_token, a.refresh_token FROM connected_accounts a
+            JOIN users u ON u.id = a.user_id WHERE u.email = ?
+            """.trimIndent(),
+            email,
+        )
+        assertThat(row["access_token"] as String).startsWith("v1:").doesNotContain("fake-access-token")
+        assertThat(row["refresh_token"] as String).startsWith("v1:").doesNotContain("fake-refresh-token")
+        // Through JPA the tokens come back decrypted
+        val account = checkNotNull(accounts.findByUserEmailAndProvider(email, "spotify"))
+        assertThat(account.accessToken).isEqualTo("fake-access-token")
     }
 
     @Test

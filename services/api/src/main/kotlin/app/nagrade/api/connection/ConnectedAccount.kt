@@ -2,6 +2,7 @@ package app.nagrade.api.connection
 
 import app.nagrade.api.user.User
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -13,7 +14,7 @@ import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 
-// Tokens are stored as TokenCipher output, never as they came from the provider
+// Tokens are plain text in memory and AES-GCM in the database (EncryptedTokenConverter)
 @Entity
 @Table(name = "connected_accounts")
 class ConnectedAccount(
@@ -24,12 +25,14 @@ class ConnectedAccount(
     @Column(nullable = false, updatable = false)
     val provider: String,
 
+    @Convert(converter = EncryptedTokenConverter::class)
     @Column(name = "access_token", nullable = false)
     var accessToken: String,
 
     @Column(name = "access_token_expires_at")
     var accessTokenExpiresAt: Instant?,
 
+    @Convert(converter = EncryptedTokenConverter::class)
     @Column(name = "refresh_token")
     var refreshToken: String?,
 
