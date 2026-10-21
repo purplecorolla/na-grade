@@ -2,7 +2,7 @@
 
 | Recurso | Endpoint | Scope | Disponível | Observações |
 |---|---|---|---|---|
-| Artistas mais ouvidos | GET /me/top/artists | user-top-read | Sim (doc) | Teste real na Sprint 1 |
+| Artistas mais ouvidos | GET /me/top/artists | user-top-read | Sim (doc) | limit máx. 50; `genres` deprecated (doc em 2026-10-21). Teste real na #12 |
 | Busca de músicas | GET /search | nenhum | Sim (testado) | limit máx. 10 desde fev/2026 |
 | Criar playlist | POST /me/playlists | playlist-modify-public/private | Sim (doc) | Substituiu /users/{id}/playlists |
 | Adicionar músicas | POST /playlists/{id}/items | playlist-modify-public/private | Sim (doc) | Renomeado de /tracks |

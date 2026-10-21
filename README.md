@@ -30,7 +30,10 @@ ocupada, pare o `mvnw` do terminal antes.
 
 1. Abra `http://127.0.0.1:8080/playground.html`. Use sempre `127.0.0.1`: os cookies de `localhost` são outros.
 2. Cadastre-se e faça login, depois clique em **Connect Spotify** e autorize.
-3. Na volta, o playground lista as conexões. **Disconnect Spotify** apaga os tokens do nosso banco.
+3. Na volta, o playground lista as conexões.
+4. **GET /me/top-artists** mostra seus artistas mais ouvidos (`period`: `short` ~4 semanas, `medium` ~6 meses, `long` ~1 ano).
+   O token do Spotify é renovado sozinho; se o Spotify recusar, a resposta é 401 `provider_reconnect_required` e é só conectar de novo.
+5. **Disconnect Spotify** apaga os tokens do nosso banco.
 
 O Spotify não tem API de revogação: para tirar o acesso de vez, remova o app em
 [spotify.com/account/apps](https://www.spotify.com/account/apps/).

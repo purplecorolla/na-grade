@@ -2,6 +2,10 @@ package app.nagrade.api.error
 
 import app.nagrade.api.auth.EmailAlreadyRegisteredException
 import app.nagrade.api.connection.UnknownProviderException
+import app.nagrade.api.music.ProviderNotConnectedException
+import app.nagrade.api.music.ProviderReconnectRequiredException
+import app.nagrade.api.music.ProviderUnavailableException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -13,6 +17,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
 // Errors as ProblemDetail (RFC 9457) plus a stable `code` the frontend uses to pick the translated message
@@ -26,6 +31,24 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(UnknownProviderException::class)
     fun unknownProvider(e: UnknownProviderException): ProblemDetail =
         problem(HttpStatus.NOT_FOUND, "Unknown provider", "unknown_provider")
+
+    @ExceptionHandler(ProviderNotConnectedException::class)
+    fun providerNotConnected(e: ProviderNotConnectedException): ProblemDetail =
+        problem(HttpStatus.CONFLICT, "Music provider not connected", "provider_not_connected")
+            .apply { setProperty("provider", e.provider) }
+
+    // 401 like a missing session, but with a body: the frontend tells them apart by the code
+    @ExceptionHandler(ProviderReconnectRequiredException::class)
+    fun providerReconnectRequired(e: ProviderReconnectRequiredException): ProblemDetail =
+        problem(HttpStatus.UNAUTHORIZED, "Connect the music provider again", "provider_reconnect_required")
+            .apply { setProperty("provider", e.provider) }
+
+    @ExceptionHandler(ProviderUnavailableException::class)
+    fun providerUnavailable(e: ProviderUnavailableException): ProblemDetail {
+        log.warn("{} call failed: {}", e.provider, e.cause?.message)
+        return problem(HttpStatus.BAD_GATEWAY, "Music provider unavailable", "provider_unavailable")
+            .apply { setProperty("provider", e.provider) }
+    }
 
     // Same message for unknown email and wrong password, so the response doesn't reveal who has an account
     @ExceptionHandler(AuthenticationException::class)
@@ -44,6 +67,18 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
         return super.handleMethodArgumentNotValid(ex, headers, status, request)
     }
 
+    // Constraints on @RequestParam (e.g. period=short|medium|long), same shape as body validation
+    override fun handleHandlerMethodValidationException(
+        ex: HandlerMethodValidationException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? {
+        ex.body.setProperty("code", "validation_failed")
+        ex.body.setProperty("fields", ex.parameterValidationResults.mapNotNull { it.methodParameter.parameterName }.distinct().sorted())
+        return super.handleHandlerMethodValidationException(ex, headers, status, request)
+    }
+
     // Malformed JSON or a missing required field (non-nullable in Kotlin)
     override fun handleHttpMessageNotReadable(
         ex: HttpMessageNotReadableException,
@@ -53,6 +88,10 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     ): ResponseEntity<Any>? {
         val body = problem(HttpStatus.BAD_REQUEST, "Malformed request body", "malformed_request")
         return handleExceptionInternal(ex, body, headers, status, request)
+    }
+
+    private companion object {
+        val log = LoggerFactory.getLogger(ApiExceptionHandler::class.java)
     }
 
     private fun problem(status: HttpStatus, detail: String, code: String): ProblemDetail =

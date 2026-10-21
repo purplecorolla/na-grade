@@ -49,6 +49,7 @@ Projeto de portfólio, trabalhado como numa empresa.
   - Criar playlist: `POST /me/playlists`. Adicionar músicas: `POST /playlists/{id}/items`
   - Busca: `limit` máximo 10
   - Removidos: `GET /artists/{id}/top-tracks`, browse, e os campos `popularity` e `followers`
+  - `genres` do artista está deprecated (doc conferida em 2026-10-21): não usar
   - Dono precisa de Premium; até 5 usuários autorizados
 - setlist.fm: buscar por nome traz bandas cover. Fluxo certo:
   `GET /rest/1.0/search/artists?artistName=X&sort=relevance` → aceitar só nome idêntico →
