@@ -19,7 +19,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Ambiente: Windows 11, Git Bash, IntelliJ, Docker Desktop
 
 ## Comandos
-- Subir infra: `docker compose -f infra/docker-compose.yml up -d`
+- Subir infra: `docker compose --env-file .env -f infra/docker-compose.yml up -d`
 - Testes: `cd services/api && ./mvnw verify`
 - Rodar: `cd services/api && ./mvnw spring-boot:run`
 - Health: `http://127.0.0.1:8080/actuator/health`
@@ -29,7 +29,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - ADR 0003: provedores de música atrás da porta `MusicProvider`; `SpotifyAdapter` é a 1ª implementação
 - ADR 0004: login próprio (e-mail/senha com BCrypt; Google depois). Spotify é só conexão opcional
 - ADR 0005: api em Kotlin (JVM 21 e Maven continuam)
-- ADR 0006 (a escrever na #9): sessão no Redis com Spring Session, em vez de JWT
+- ADR 0006: sessão no Redis com Spring Session, em vez de JWT. CSRF no modo SPA (`GET /auth/csrf` gera o cookie)
 - Redirect URI do Spotify: `http://127.0.0.1:8080/login/oauth2/code/spotify` (não usar "localhost")
 - Migrations com Flyway (`V1__...sql`). Testes de integração com Testcontainers; adapters com WireMock
 
@@ -46,7 +46,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Tutoriais anteriores a fev/2026 podem estar errados; confira a documentação oficial
 
 ## Segurança (inegociável)
-- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente
+- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente (a api lê o `.env` via `spring.config.import`)
 - Toda variável nova entra no `.env.example`, sem valor
 - Nada de chave, senha ou token hardcoded, nem em teste (use valores falsos)
 
