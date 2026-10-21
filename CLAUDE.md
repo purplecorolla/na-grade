@@ -19,9 +19,10 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Ambiente: Windows 11, Git Bash, IntelliJ, Docker Desktop
 
 ## Comandos
-- Subir infra: `docker compose --env-file .env -f infra/docker-compose.yml up -d`
+- Infra: sobe sozinha ao rodar a api (spring-boot-docker-compose, lê credenciais dos containers). Na mão: `docker compose --env-file .env -f infra/docker-compose.yml up -d`
+- Zerar o banco local (ex.: mudou usuário/senha no `.env`): `docker compose --env-file .env -f infra/docker-compose.yml down -v`
 - Testes: `cd services/api && ./mvnw verify`
-- Rodar: `cd services/api && ./mvnw spring-boot:run`
+- Rodar: `cd services/api && ./mvnw spring-boot:run` (ou ▶ no `ApiApplication.kt`, com working dir `services/api`)
 - Health: `http://127.0.0.1:8080/actuator/health`
 - Testar a API à mão: importar `services/api/insomnia/na-grade.yaml` no Insomnia (13.x). Endpoint novo entra na collection no mesmo PR
 - Validar a collection pela linha de comando: `inso run collection wrk_nagrade_api -w services/api/insomnia/na-grade.yaml -e env_nagrade_base`
@@ -53,7 +54,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Tutoriais anteriores a fev/2026 podem estar errados; confira a documentação oficial
 
 ## Segurança (inegociável)
-- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente (a api lê o `.env` via `spring.config.import`)
+- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente (só o Docker Compose lê o `.env`; a api nunca lê)
 - Toda variável nova entra no `.env.example`, sem valor
 - Nada de chave, senha ou token hardcoded, nem em teste (use valores falsos)
 
