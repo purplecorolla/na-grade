@@ -22,10 +22,13 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Infra: sobe sozinha ao rodar a api (spring-boot-docker-compose, lê credenciais dos containers). Na mão: `docker compose --env-file .env -f infra/docker-compose.yml up -d`
 - Zerar o banco local (ex.: mudou usuário/senha no `.env`): `docker compose --env-file .env -f infra/docker-compose.yml down -v`
 - Testes: `cd services/api && ./mvnw verify`
-- Rodar: `cd services/api && ./mvnw spring-boot:run` (ou ▶ no `ApiApplication.kt`, com working dir `services/api`)
+- Rodar: `cd services/api && ./mvnw spring-boot:run` (já usa o perfil `dev`) ou ▶ no `ApiApplication.kt`, com working dir
+  `services/api` e VM option `-Dspring.profiles.active=dev` (IntelliJ Community não tem o campo "Active profiles")
+- Testar pelo navegador (cadastro, login, conectar Spotify): `http://127.0.0.1:8080/playground.html`, só no perfil `dev`
 - Health: `http://127.0.0.1:8080/actuator/health`
 - Testar a API à mão: importar `services/api/insomnia/na-grade.yaml` no Insomnia (13.x). Endpoint novo entra na collection no mesmo PR
 - Validar a collection pela linha de comando: `inso run collection wrk_nagrade_api -w services/api/insomnia/na-grade.yaml -e env_nagrade_base`
+  (o runner do inso não troca o cookie `SESSION` depois do logout: requisições logadas ficam antes do Logout)
 
 ## Idioma
 - Código em inglês: pacotes, classes, funções, variáveis, nomes de teste, comentários, banco e contrato da API
@@ -54,7 +57,11 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Tutoriais anteriores a fev/2026 podem estar errados; confira a documentação oficial
 
 ## Segurança (inegociável)
-- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente (só o Docker Compose lê o `.env`; a api nunca lê)
+- Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente
+- Cada variável do `.env` tem um leitor só. `DB_*`/`REDIS_*` são do Docker Compose: no dev local a api pega a conexão
+  dos containers (os `${DB_*}` do `application.properties` só valem fora do Compose). `SPOTIFY_*` são da api, que
+  importa o `.env` como `.properties` (valores sem aspas)
+- Tokens de provedores passam pela `TokenCipher` (texto puro só até a #11, só no banco local)
 - Toda variável nova entra no `.env.example`, sem valor
 - Nada de chave, senha ou token hardcoded, nem em teste (use valores falsos)
 

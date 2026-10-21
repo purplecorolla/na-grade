@@ -39,7 +39,9 @@ collection:
       created: 1792540800000
       modified: 1792540800000
       sortKey: 200
-      description: Register, login, read the logged-in user and logout, in this order.
+      description: |-
+        Register, login, read the logged-in user, list and disconnect music providers, logout, in this order.
+        Connecting Spotify needs a browser (redirects to Spotify): http://127.0.0.1:8080/playground.html (dev profile).
     scripts:
       preRequest: &csrf |-
         // Spring Security SPA mode: the XSRF-TOKEN cookie value must go back in the X-XSRF-TOKEN header.
@@ -144,6 +146,79 @@ collection:
               insomnia.expect(insomnia.response.code).to.equal(200);
               const user = insomnia.response.json();
               insomnia.expect(user).to.have.all.keys('id', 'email', 'createdAt');
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/me/connections"
+        name: List connections
+        meta:
+          id: req_nagrade_conn_list
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 200 with provider, scopes and connectedAt. Never the tokens.
+          sortKey: 232
+        method: GET
+        scripts:
+          afterResponse: |-
+            insomnia.test('200 without tokens', () => {
+              insomnia.expect(insomnia.response.code).to.equal(200);
+              for (const connection of insomnia.response.json()) {
+                insomnia.expect(connection).to.have.all.keys('provider', 'scopes', 'connectedAt');
+              }
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/me/connections/spotify"
+        name: Disconnect Spotify
+        meta:
+          id: req_nagrade_conn_disconnect
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 204 even when not connected. Revoke for good at spotify.com/account/apps.
+          sortKey: 234
+        method: DELETE
+        scripts:
+          afterResponse: |-
+            insomnia.test('204 No Content', () => {
+              insomnia.expect(insomnia.response.code).to.equal(204);
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/me/connections/deezer"
+        name: Disconnect unknown provider (404)
+        meta:
+          id: req_nagrade_conn_unknown
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: ""
+          sortKey: 236
+        method: DELETE
+        scripts:
+          afterResponse: |-
+            insomnia.test('404 unknown_provider', () => {
+              insomnia.expect(insomnia.response.code).to.equal(404);
+              insomnia.expect(insomnia.response.json().code).to.equal('unknown_provider');
             });
         settings:
           renderRequestBody: true

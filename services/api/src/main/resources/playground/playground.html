@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Na Grade playground</title>
+  <!-- Dev profile only: exercises the browser flows (session cookie, CSRF, OAuth2 redirects) until the frontend exists -->
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    fieldset { margin-bottom: 1rem; }
+    input { margin-right: .5rem; }
+    button, a.button { margin: .25rem .25rem .25rem 0; }
+    pre { background: #f4f4f4; padding: 1rem; white-space: pre-wrap; word-break: break-all; }
+    #banner:empty { display: none; }
+    #banner { padding: .5rem 1rem; background: #fff3cd; }
+  </style>
+</head>
+<body>
+  <h1>Na Grade playground</h1>
+  <p>Always open it at <code>http://127.0.0.1:8080</code>: cookies from <code>localhost</code> are separate.</p>
+  <p id="banner"></p>
+
+  <fieldset>
+    <legend>Account</legend>
+    <input id="email" type="email" placeholder="email">
+    <input id="password" type="password" placeholder="password (8+ chars)">
+    <br>
+    <button data-action="register">Register</button>
+    <button data-action="login">Log in</button>
+    <button data-action="me">GET /me</button>
+    <button data-action="logout">Log out</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Spotify</legend>
+    <a class="button" href="/oauth2/authorization/spotify"><button type="button">Connect Spotify</button></a>
+    <button data-action="connections">GET /me/connections</button>
+    <button data-action="disconnect">Disconnect Spotify</button>
+  </fieldset>
+
+  <pre id="output">Responses show up here.</pre>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function xsrfToken() {
+      const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    // Same contract as the frontend: GET /auth/csrf issues the cookie, mutating requests echo it in a header
+    async function call(method, path, body) {
+      if (method !== 'GET' && !xsrfToken()) await fetch('/auth/csrf');
+      const headers = {};
+      if (method !== 'GET') headers['X-XSRF-TOKEN'] = xsrfToken();
+      if (body) headers['Content-Type'] = 'application/json';
+      const response = await fetch(path, { method, headers, body: body && JSON.stringify(body) });
+      const text = await response.text();
+      let shown = text;
+      try { shown = JSON.stringify(JSON.parse(text), null, 2); } catch (e) { /* not JSON */ }
+      output.textContent = `${method} ${path} -> ${response.status}\n\n${shown}`;
+    }
+
+    const credentials = () => ({
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value,
+    });
+
+    const actions = {
+      register: () => call('POST', '/auth/register', credentials()),
+      login: () => call('POST', '/auth/login', credentials()),
+      me: () => call('GET', '/me'),
+      logout: () => call('POST', '/auth/logout'),
+      connections: () => call('GET', '/me/connections'),
+      disconnect: () => call('DELETE', '/me/connections/spotify'),
+    };
+
+    document.querySelectorAll('[data-action]').forEach((button) =>
+      button.addEventListener('click', () => actions[button.dataset.action]()));
+
+    // Back from the OAuth2 callback: ?connected=spotify or ?error=<code>
+    const params = new URLSearchParams(location.search);
+    const banner = document.getElementById('banner');
+    if (params.has('connected')) banner.textContent = `Connected: ${params.get('connected')}`;
+    if (params.has('error')) banner.textContent = `Connection failed: ${params.get('error')}`;
+    if (params.has('connected')) actions.connections();
+  </script>
+</body>
+</html>

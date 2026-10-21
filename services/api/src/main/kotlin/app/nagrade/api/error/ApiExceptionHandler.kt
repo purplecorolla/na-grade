@@ -1,6 +1,7 @@
 package app.nagrade.api.error
 
 import app.nagrade.api.auth.EmailAlreadyRegisteredException
+import app.nagrade.api.connection.UnknownProviderException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -21,6 +22,10 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(EmailAlreadyRegisteredException::class)
     fun emailAlreadyRegistered(e: EmailAlreadyRegisteredException): ProblemDetail =
         problem(HttpStatus.CONFLICT, "Email already registered", "email_already_registered")
+
+    @ExceptionHandler(UnknownProviderException::class)
+    fun unknownProvider(e: UnknownProviderException): ProblemDetail =
+        problem(HttpStatus.NOT_FOUND, "Unknown provider", "unknown_provider")
 
     // Same message for unknown email and wrong password, so the response doesn't reveal who has an account
     @ExceptionHandler(AuthenticationException::class)

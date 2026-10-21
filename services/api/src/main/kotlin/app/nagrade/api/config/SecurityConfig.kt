@@ -1,5 +1,6 @@
 package app.nagrade.api.config
 
+import app.nagrade.api.connection.LoggedInOnlyAuthorizationRequestResolver
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
@@ -11,6 +12,7 @@ import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.factory.PasswordEncoderFactories
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler
@@ -21,6 +23,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.csrf.CsrfAuthenticationStrategy
+import org.springframework.security.web.savedrequest.NullRequestCache
 
 @Configuration
 class SecurityConfig {
@@ -28,7 +31,11 @@ class SecurityConfig {
     private val csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse()
 
     @Bean
-    fun filterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
+    fun filterChain(
+        http: HttpSecurity,
+        securityContextRepository: SecurityContextRepository,
+        clientRegistrations: ClientRegistrationRepository,
+    ): SecurityFilterChain {
         // The Kotlin DSL has no spa() yet: XSRF-TOKEN cookie that the frontend sends back in the X-XSRF-TOKEN header
         http.csrf { it.spa().csrfTokenRepository(csrfTokenRepository) }
         http {
@@ -38,6 +45,8 @@ class SecurityConfig {
                 authorize("/auth/register", permitAll)
                 authorize("/auth/login", permitAll)
                 authorize("/error", permitAll)
+                // Only served in the dev profile (PlaygroundConfig)
+                authorize("/playground.html", permitAll)
                 authorize(anyRequest, authenticated)
             }
             securityContext {
@@ -46,6 +55,17 @@ class SecurityConfig {
             // JSON API: respond 401 when not logged in instead of redirecting to a login page
             exceptionHandling {
                 authenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+            }
+            // JSON API: no "go back to the page you tried before login". Without this, the OAuth2 callback could
+            // redirect to a stale request saved by an earlier 401
+            requestCache {
+                requestCache = NullRequestCache()
+            }
+            // Connects providers for a user already logged in (ADR 0004): oauth2Client, not oauth2Login
+            oauth2Client {
+                authorizationCodeGrant {
+                    authorizationRequestResolver = LoggedInOnlyAuthorizationRequestResolver(clientRegistrations)
+                }
             }
             logout {
                 logoutUrl = "/auth/logout"
