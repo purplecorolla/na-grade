@@ -36,6 +36,13 @@
     <a class="button" href="/oauth2/authorization/spotify"><button type="button">Connect Spotify</button></a>
     <button data-action="connections">GET /me/connections</button>
     <button data-action="disconnect">Disconnect Spotify</button>
+    <br>
+    <select id="period">
+      <option value="short">short (~4 weeks)</option>
+      <option value="medium" selected>medium (~6 months)</option>
+      <option value="long">long (~1 year)</option>
+    </select>
+    <button data-action="topArtists">GET /me/top-artists</button>
   </fieldset>
 
   <pre id="output">Responses show up here.</pre>
@@ -73,6 +80,7 @@
       logout: () => call('POST', '/auth/logout'),
       connections: () => call('GET', '/me/connections'),
       disconnect: () => call('DELETE', '/me/connections/spotify'),
+      topArtists: () => call('GET', `/me/top-artists?period=${document.getElementById('period').value}`),
     };
 
     document.querySelectorAll('[data-action]').forEach((button) =>

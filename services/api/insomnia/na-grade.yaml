@@ -181,6 +181,42 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "{{ _.baseUrl }}/me/top-artists"
+        name: Top artists
+        meta:
+          id: req_nagrade_top_artists
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: |-
+            period=short|medium|long (default medium). 200 with [{id, name, imageUrl}] when Spotify is connected
+            (connect it in the playground); 409 provider_not_connected otherwise.
+          sortKey: 233
+        method: GET
+        parameters:
+          - name: period
+            value: medium
+        scripts:
+          afterResponse: |-
+            insomnia.test('200 with artists, or 409 when Spotify is not connected', () => {
+              const code = insomnia.response.code;
+              insomnia.expect([200, 409]).to.include(code);
+              if (code === 200) {
+                for (const artist of insomnia.response.json()) {
+                  insomnia.expect(artist).to.have.all.keys('id', 'name', 'imageUrl');
+                }
+              } else {
+                insomnia.expect(insomnia.response.json().code).to.equal('provider_not_connected');
+              }
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
       - url: "{{ _.baseUrl }}/me/connections/spotify"
         name: Disconnect Spotify
         meta:
