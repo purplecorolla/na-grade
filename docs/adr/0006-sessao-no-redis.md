@@ -17,4 +17,4 @@ O login próprio (ADR 0004) precisa manter o usuário autenticado entre requisi�
 - A api pode ter várias instâncias sem sessão presa a uma delas.
 - Cada requisição autenticada consulta o Redis, que já é obrigatório pelo cache do setlist.fm.
 - O front precisa enviar o token CSRF em todo POST, PUT e DELETE.
-- Nos testes com MockMvc o Spring Session ignora `server.servlet.session.cookie.*`; os atributos do cookie são conferidos com o servidor real (`CookieSessaoIntegrationTest`).
+- Nos testes com MockMvc o Spring Session ignora `server.servlet.session.cookie.*`; os atributos do cookie são conferidos com o servidor real (`SessionCookieIntegrationTest`).

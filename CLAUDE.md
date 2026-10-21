@@ -11,7 +11,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Explique o "porquê" das decisões; o objetivo também é aprender.
 
 ## Stack e estrutura (monorepo, ADR 0001)
-- `services/api`: Kotlin + Spring Boot, JVM 21 (Maven, pacote `dev.caio.api`, ADR 0005)
+- `services/api`: Kotlin + Spring Boot, JVM 21 (Maven, pacote `app.nagrade.api`, ADR 0005)
 - `services/radar`: Python (Sprint 3)
 - `services/notifier`: alertas no Telegram (Sprint 3)
 - `infra/docker-compose.yml`: PostgreSQL 16 e Redis 7. Kafka a partir da Sprint 3
@@ -23,6 +23,12 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Testes: `cd services/api && ./mvnw verify`
 - Rodar: `cd services/api && ./mvnw spring-boot:run`
 - Health: `http://127.0.0.1:8080/actuator/health`
+- Testar a API à mão: `services/api/http/*.http` no HTTP Client do IntelliJ
+
+## Idioma
+- Código em inglês: pacotes, classes, funções, variáveis, nomes de teste, comentários, banco e contrato da API
+- Erros da API em inglês com `code` estável (ex.: `email_already_registered`); o front traduz pelo `code`
+- Em pt-BR: ADRs, spikes, README, CLAUDE.md, commits, issues e PRs
 
 ## Decisões já tomadas
 - ADR 0002: Spotify via OAuth2 Authorization Code + PKCE; tokens criptografados (AES-GCM) no banco
@@ -60,6 +66,6 @@ Projeto de portfólio, trabalhado como numa empresa.
 
 ## Sprint 1 (atual)
 Objetivo: o usuário cria a conta, conecta o Spotify e vê os artistas mais ouvidos.
-Ordem: #8 CI → #15 migrar para Kotlin → #9 cadastro e login por e-mail → #10 conectar Spotify → #11 criptografar tokens
+Ordem: #8 CI → #15 migrar para Kotlin → #18 código em inglês → #9 cadastro e login por e-mail → #10 conectar Spotify → #11 criptografar tokens
 → #12 artistas mais ouvidos. #13 Login com Google fica no Backlog.
 Detalhes e critérios de cada item: `gh issue view N`.
