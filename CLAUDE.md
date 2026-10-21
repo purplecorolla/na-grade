@@ -23,7 +23,8 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Testes: `cd services/api && ./mvnw verify`
 - Rodar: `cd services/api && ./mvnw spring-boot:run`
 - Health: `http://127.0.0.1:8080/actuator/health`
-- Testar a API à mão: `services/api/http/*.http` no HTTP Client do IntelliJ
+- Testar a API à mão: importar `services/api/insomnia/na-grade.yaml` no Insomnia (13.x). Endpoint novo entra na collection no mesmo PR
+- Validar a collection pela linha de comando: `inso run collection wrk_nagrade_api -w services/api/insomnia/na-grade.yaml -e env_nagrade_base`
 
 ## Idioma
 - Código em inglês: pacotes, classes, funções, variáveis, nomes de teste, comentários, banco e contrato da API
