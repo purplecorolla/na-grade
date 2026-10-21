@@ -1,0 +1,2 @@
+Arquivo de teste da #26: valor inventado, não é segredo de nenhum serviço.
+api_key = "1af12b9639348ba8c8515f4983b7bf34363d9633"
