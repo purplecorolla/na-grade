@@ -89,6 +89,10 @@ Projeto de portfólio, trabalhado como numa empresa.
 Objetivo cumprido: o usuário cria a conta, conecta o Spotify e vê os artistas mais ouvidos (#8, #15, #18, #9, #10, #11, #12).
 Resumo e pontos para a retro: último comentário da #7. #13 Login com Google segue no Backlog.
 
-## Sprint 2 (a planejar)
-Objetivo e histórias saem do planejamento no chat e entram como issues no milestone "Sprint 2". Antes de propor plano,
-leia as issues do milestone (`gh issue list --milestone "Sprint 2"`).
+## Sprint 2 (atual)
+Objetivo: montar a playlist da setlist prevista. 21 pontos.
+Ordem: #26 Fundação DevSecOps → #27 GitFlow → #28 setlist.fm → #29 prever a setlist → #30 playlist no Spotify,
+com a #31 (dívidas) nos intervalos. Diário: #25. Se apertar, a #31 é a primeira a voltar para o Backlog.
+Depois da #27, os PRs vão para `develop` (as regras novas entram no CLAUDE.md nessa issue).
+Detalhes e critérios: `gh issue view N`. Backlog: #13 Google, #33 Épico DevSecOps, #34 Épico Infra AWS; Sprint 3: #32 front.
+ADRs são numerados por ordem de criação (nada de reservar número).
