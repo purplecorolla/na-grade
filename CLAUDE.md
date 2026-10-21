@@ -59,9 +59,10 @@ Projeto de portfólio, trabalhado como numa empresa.
 ## Segurança (inegociável)
 - Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente
 - Cada variável do `.env` tem um leitor só. `DB_*`/`REDIS_*` são do Docker Compose: no dev local a api pega a conexão
-  dos containers (os `${DB_*}` do `application.properties` só valem fora do Compose). `SPOTIFY_*` são da api, que
+  dos containers (os `${DB_*}` do `application.properties` só valem fora do Compose). `SPOTIFY_*` e `TOKEN_ENCRYPTION_KEY` são da api, que
   importa o `.env` como `.properties` (valores sem aspas)
-- Tokens de provedores passam pela `TokenCipher` (texto puro só até a #11, só no banco local)
+- Tokens de provedores ficam cifrados no banco (AES-GCM, `EncryptedTokenConverter` na coluna, chave em `TOKEN_ENCRYPTION_KEY`).
+  Coluna nova com token ou segredo usa o mesmo converter; nunca logue o valor cifrado ou decifrado
 - Toda variável nova entra no `.env.example`, sem valor
 - Nada de chave, senha ou token hardcoded, nem em teste (use valores falsos)
 

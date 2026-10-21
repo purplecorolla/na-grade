@@ -19,7 +19,6 @@ class JpaOAuth2AuthorizedClientService(
     private val accounts: ConnectedAccountRepository,
     private val users: UserRepository,
     private val clientRegistrations: ClientRegistrationRepository,
-    private val cipher: TokenCipher,
 ) : OAuth2AuthorizedClientService {
 
     @Suppress("UNCHECKED_CAST")
@@ -29,35 +28,34 @@ class JpaOAuth2AuthorizedClientService(
         val account = accounts.findByUserEmailAndProvider(principalName, clientRegistrationId) ?: return null
         val accessToken = OAuth2AccessToken(
             OAuth2AccessToken.TokenType.BEARER,
-            cipher.decrypt(account.accessToken),
+            account.accessToken,
             account.updatedAt,
             account.accessTokenExpiresAt,
             account.scopes.split(" ").filter { it.isNotEmpty() }.toSet(),
         )
-        val refreshToken = account.refreshToken?.let { OAuth2RefreshToken(cipher.decrypt(it), null) }
+        val refreshToken = account.refreshToken?.let { OAuth2RefreshToken(it, null) }
         return OAuth2AuthorizedClient(registration, principalName, accessToken, refreshToken) as T
     }
 
     override fun saveAuthorizedClient(authorizedClient: OAuth2AuthorizedClient, principal: Authentication) {
         val provider = authorizedClient.clientRegistration.registrationId
         val accessToken = authorizedClient.accessToken
-        val encryptedAccess = cipher.encrypt(accessToken.tokenValue)
         // Spotify may omit the refresh token when refreshing: keep the one we already have
-        val encryptedRefresh = authorizedClient.refreshToken?.let { cipher.encrypt(it.tokenValue) }
+        val refreshToken = authorizedClient.refreshToken?.tokenValue
         val scopes = accessToken.scopes.sorted().joinToString(" ")
 
         val existing = accounts.findByUserEmailAndProvider(principal.name, provider)
         if (existing != null) {
-            existing.accessToken = encryptedAccess
+            existing.accessToken = accessToken.tokenValue
             existing.accessTokenExpiresAt = accessToken.expiresAt
-            existing.refreshToken = encryptedRefresh ?: existing.refreshToken
+            existing.refreshToken = refreshToken ?: existing.refreshToken
             existing.scopes = scopes
             existing.updatedAt = accessToken.issuedAt ?: Instant.now()
             return
         }
         val user = checkNotNull(users.findByEmail(principal.name)) { "session user no longer exists" }
         accounts.save(
-            ConnectedAccount(user, provider, encryptedAccess, accessToken.expiresAt, encryptedRefresh, scopes).apply {
+            ConnectedAccount(user, provider, accessToken.tokenValue, accessToken.expiresAt, refreshToken, scopes).apply {
                 updatedAt = accessToken.issuedAt ?: Instant.now()
             },
         )
