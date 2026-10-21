@@ -85,8 +85,10 @@ Projeto de portfólio, trabalhado como numa empresa.
 - O chat decide o caminho; o Claude Code transforma em plano verificado no código antes de editar. Se o código
   contradisser a decisão, registre o conflito na issue e a dúvida volta para o chat
 
-## Sprint 1 (atual)
-Objetivo: o usuário cria a conta, conecta o Spotify e vê os artistas mais ouvidos.
-Ordem: #8 CI → #15 migrar para Kotlin → #18 código em inglês → #9 cadastro e login por e-mail → #10 conectar Spotify → #11 criptografar tokens
-→ #12 artistas mais ouvidos. #13 Login com Google fica no Backlog.
-Detalhes e critérios de cada item: `gh issue view N`.
+## Sprint 1 (concluída em 2026-10-21)
+Objetivo cumprido: o usuário cria a conta, conecta o Spotify e vê os artistas mais ouvidos (#8, #15, #18, #9, #10, #11, #12).
+Resumo e pontos para a retro: último comentário da #7. #13 Login com Google segue no Backlog.
+
+## Sprint 2 (a planejar)
+Objetivo e histórias saem do planejamento no chat e entram como issues no milestone "Sprint 2". Antes de propor plano,
+leia as issues do milestone (`gh issue list --milestone "Sprint 2"`).
