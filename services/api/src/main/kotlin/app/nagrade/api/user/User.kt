@@ -1,4 +1,4 @@
-package dev.caio.api.usuario
+package app.nagrade.api.user
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -9,22 +9,22 @@ import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 
-// class comum (não data class): equals/hashCode gerados conflitam com os proxies do Hibernate
+// Plain class (not a data class): generated equals/hashCode clash with Hibernate proxies
 @Entity
-@Table(name = "usuarios")
-class Usuario(
+@Table(name = "users")
+class User(
     @Column(nullable = false, unique = true)
     val email: String,
 
-    @Column(name = "senha_hash", nullable = false)
-    val senhaHash: String,
+    @Column(name = "password_hash", nullable = false)
+    val passwordHash: String,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    val criadoEm: Instant = Instant.now()
+    @Column(name = "created_at", nullable = false, updatable = false)
+    val createdAt: Instant = Instant.now()
 }
 
-fun normalizarEmail(email: String): String = email.trim().lowercase()
+fun normalizeEmail(email: String): String = email.trim().lowercase()

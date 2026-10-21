@@ -1,4 +1,4 @@
-package dev.caio.api.config
+package app.nagrade.api.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -29,13 +29,13 @@ class SecurityConfig {
 
     @Bean
     fun filterChain(http: HttpSecurity, securityContextRepository: SecurityContextRepository): SecurityFilterChain {
-        // O DSL Kotlin ainda não tem spa(): cookie XSRF-TOKEN que o front devolve no header X-XSRF-TOKEN
+        // The Kotlin DSL has no spa() yet: XSRF-TOKEN cookie that the frontend sends back in the X-XSRF-TOKEN header
         http.csrf { it.spa().csrfTokenRepository(csrfTokenRepository) }
         http {
             authorizeHttpRequests {
                 authorize("/actuator/health", permitAll)
                 authorize("/auth/csrf", permitAll)
-                authorize("/auth/cadastro", permitAll)
+                authorize("/auth/register", permitAll)
                 authorize("/auth/login", permitAll)
                 authorize("/error", permitAll)
                 authorize(anyRequest, authenticated)
@@ -43,7 +43,7 @@ class SecurityConfig {
             securityContext {
                 this.securityContextRepository = securityContextRepository
             }
-            // API JSON: sem login responde 401, em vez de redirecionar para a página de login
+            // JSON API: respond 401 when not logged in instead of redirecting to a login page
             exceptionHandling {
                 authenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
             }
@@ -59,13 +59,13 @@ class SecurityConfig {
     @Bean
     fun securityContextRepository(): SecurityContextRepository = HttpSessionSecurityContextRepository()
 
-    // Usada no login: troca o ID da sessão e o token CSRF
+    // Used on login: rotates the session ID and the CSRF token
     @Bean
     fun sessionAuthenticationStrategy(): SessionAuthenticationStrategy = CompositeSessionAuthenticationStrategy(
         listOf(ChangeSessionIdAuthenticationStrategy(), CsrfAuthenticationStrategy(csrfTokenRepository)),
     )
 
-    // BCrypt por padrão; o prefixo {bcrypt} no hash permite trocar de algoritmo sem invalidar senhas antigas
+    // BCrypt by default; the {bcrypt} prefix in the hash allows switching algorithms without invalidating old passwords
     @Bean
     fun passwordEncoder(): PasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder()
 

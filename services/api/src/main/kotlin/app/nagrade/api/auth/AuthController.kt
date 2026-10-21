@@ -1,6 +1,6 @@
-package dev.caio.api.auth
+package app.nagrade.api.auth
 
-import dev.caio.api.usuario.normalizarEmail
+import app.nagrade.api.user.normalizeEmail
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -21,50 +21,50 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-// BCrypt só considera os primeiros 72 bytes da senha; acima disso o resto seria ignorado em silêncio
-data class CadastroRequest(
+// BCrypt only uses the first 72 bytes of the password; anything beyond would be silently ignored
+data class RegisterRequest(
     @field:NotBlank @field:Email @field:Size(max = 254) val email: String,
-    @field:Size(min = 8, max = 72) val senha: String,
+    @field:Size(min = 8, max = 72) val password: String,
 )
 
 data class LoginRequest(
     @field:NotBlank val email: String,
-    @field:NotBlank val senha: String,
+    @field:NotBlank val password: String,
 )
 
 @RestController
 @RequestMapping("/auth")
 class AuthController(
-    private val cadastroService: CadastroService,
+    private val registrationService: RegistrationService,
     private val authenticationManager: AuthenticationManager,
     private val securityContextRepository: SecurityContextRepository,
     private val sessionAuthenticationStrategy: SessionAuthenticationStrategy,
 ) {
 
-    // Gera o cookie XSRF-TOKEN; o front chama uma vez antes do primeiro POST
+    // Issues the XSRF-TOKEN cookie; the frontend calls it once before the first POST
     @GetMapping("/csrf")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun csrf(token: CsrfToken) {
         token.token
     }
 
-    @PostMapping("/cadastro")
+    @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    fun cadastrar(@Valid @RequestBody req: CadastroRequest) {
-        cadastroService.cadastrar(req.email, req.senha)
+    fun register(@Valid @RequestBody req: RegisterRequest) {
+        registrationService.register(req.email, req.password)
     }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun login(@Valid @RequestBody req: LoginRequest, request: HttpServletRequest, response: HttpServletResponse) {
         val authentication = authenticationManager.authenticate(
-            UsernamePasswordAuthenticationToken.unauthenticated(normalizarEmail(req.email), req.senha),
+            UsernamePasswordAuthenticationToken.unauthenticated(normalizeEmail(req.email), req.password),
         )
-        // Troca o ID da sessão e o token CSRF (contra session fixation) antes de gravar o login
+        // Rotates the session ID and the CSRF token (against session fixation) before storing the login
         sessionAuthenticationStrategy.onAuthentication(authentication, request, response)
         val context = SecurityContextHolder.createEmptyContext().apply { this.authentication = authentication }
         SecurityContextHolder.setContext(context)
-        // Desde o Spring Security 6, salvar o contexto na sessão é explícito
+        // Since Spring Security 6, saving the context to the session is explicit
         securityContextRepository.saveContext(context, request, response)
     }
 }

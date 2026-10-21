@@ -1,4 +1,4 @@
-package dev.caio.api.usuario
+package app.nagrade.api.user
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import java.util.UUID
 
-data class MeResponse(val id: UUID, val email: String, val criadoEm: Instant)
+data class MeResponse(val id: UUID, val email: String, val createdAt: Instant)
 
 @RestController
-class UsuarioController(private val usuarios: UsuarioRepository) {
+class UserController(private val users: UserRepository) {
 
     @GetMapping("/me")
     fun me(@AuthenticationPrincipal principal: UserDetails): MeResponse {
-        val usuario = checkNotNull(usuarios.findByEmail(principal.username)) { "usuário da sessão não existe mais" }
-        return MeResponse(usuario.id!!, usuario.email, usuario.criadoEm)
+        val user = checkNotNull(users.findByEmail(principal.username)) { "session user no longer exists" }
+        return MeResponse(user.id!!, user.email, user.createdAt)
     }
 }

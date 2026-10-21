@@ -1,4 +1,4 @@
-package dev.caio.api
+package app.nagrade.api
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

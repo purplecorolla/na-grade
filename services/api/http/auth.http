@@ -1,0 +1,63 @@
+@baseUrl = http://127.0.0.1:8080
+@email = fan@nagrade.dev
+@password = fake-password-123
+
+# Auth flow: run the requests in order (▶ in the gutter). The HTTP Client keeps cookies between requests
+
+### 1. Health check
+GET {{baseUrl}}/actuator/health
+
+### 2. CSRF token: stores the XSRF-TOKEN cookie value for the next POSTs
+GET {{baseUrl}}/auth/csrf
+
+> {%
+    const cookie = response.headers.valuesOf("Set-Cookie").find(c => c.startsWith("XSRF-TOKEN="));
+    client.global.set("xsrf", cookie.split(";")[0].substring("XSRF-TOKEN=".length));
+    client.test("CSRF cookie issued", () => client.assert(response.status === 204));
+%}
+
+### 3. Register (201; running it again returns 409 email_already_registered)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+X-XSRF-TOKEN: {{xsrf}}
+
+{"email": "{{email}}", "password": "{{password}}"}
+
+### 4. Login (204 + SESSION cookie). Login rotates the CSRF token: run step 2 again before the next POST
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+X-XSRF-TOKEN: {{xsrf}}
+
+{"email": "{{email}}", "password": "{{password}}"}
+
+### 5. Logged-in user (200; 401 without a session)
+GET {{baseUrl}}/me
+
+### 6. New CSRF token after login
+GET {{baseUrl}}/auth/csrf
+
+> {%
+    const cookie = response.headers.valuesOf("Set-Cookie").find(c => c.startsWith("XSRF-TOKEN="));
+    client.global.set("xsrf", cookie.split(";")[0].substring("XSRF-TOKEN=".length));
+%}
+
+### 7. Logout (204)
+POST {{baseUrl}}/auth/logout
+X-XSRF-TOKEN: {{xsrf}}
+
+### 8. After logout (401)
+GET {{baseUrl}}/me
+
+### Errors: invalid email and short password (400 validation_failed, fields [email, password])
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+X-XSRF-TOKEN: {{xsrf}}
+
+{"email": "not-an-email", "password": "short"}
+
+### Errors: wrong password (401 invalid_credentials)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+X-XSRF-TOKEN: {{xsrf}}
+
+{"email": "{{email}}", "password": "wrong-password-123"}

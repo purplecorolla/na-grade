@@ -1,21 +1,21 @@
-package dev.caio.api.auth
+package app.nagrade.api.auth
 
-import dev.caio.api.usuario.UsuarioRepository
-import dev.caio.api.usuario.normalizarEmail
-import org.springframework.security.core.userdetails.User
+import app.nagrade.api.user.UserRepository
+import app.nagrade.api.user.normalizeEmail
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
+import org.springframework.security.core.userdetails.User as SecurityUser
 
 @Service
-class UsuarioDetailsService(private val usuarios: UsuarioRepository) : UserDetailsService {
+class AppUserDetailsService(private val users: UserRepository) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
-        val usuario = usuarios.findByEmail(normalizarEmail(username))
-            ?: throw UsernameNotFoundException("usuário não encontrado")
-        return User.withUsername(usuario.email)
-            .password(usuario.senhaHash)
+        val user = users.findByEmail(normalizeEmail(username))
+            ?: throw UsernameNotFoundException("user not found")
+        return SecurityUser.withUsername(user.email)
+            .password(user.passwordHash)
             .authorities(emptyList())
             .build()
     }

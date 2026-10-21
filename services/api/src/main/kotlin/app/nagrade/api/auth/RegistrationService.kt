@@ -1,28 +1,28 @@
-package dev.caio.api.auth
+package app.nagrade.api.auth
 
-import dev.caio.api.usuario.Usuario
-import dev.caio.api.usuario.UsuarioRepository
-import dev.caio.api.usuario.normalizarEmail
+import app.nagrade.api.user.User
+import app.nagrade.api.user.UserRepository
+import app.nagrade.api.user.normalizeEmail
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
-class EmailJaCadastradoException : RuntimeException("e-mail já cadastrado")
+class EmailAlreadyRegisteredException : RuntimeException("email already registered")
 
 @Service
-class CadastroService(
-    private val usuarios: UsuarioRepository,
+class RegistrationService(
+    private val users: UserRepository,
     private val passwordEncoder: PasswordEncoder,
 ) {
 
-    fun cadastrar(email: String, senha: String): Usuario {
-        val normalizado = normalizarEmail(email)
-        if (usuarios.existsByEmail(normalizado)) throw EmailJaCadastradoException()
-        // A constraint UNIQUE cobre dois cadastros simultâneos que passaram juntos pela checagem acima
+    fun register(email: String, password: String): User {
+        val normalized = normalizeEmail(email)
+        if (users.existsByEmail(normalized)) throw EmailAlreadyRegisteredException()
+        // The UNIQUE constraint covers two concurrent sign-ups that both passed the check above
         return try {
-            usuarios.saveAndFlush(Usuario(normalizado, checkNotNull(passwordEncoder.encode(senha))))
+            users.saveAndFlush(User(normalized, checkNotNull(passwordEncoder.encode(password))))
         } catch (e: DataIntegrityViolationException) {
-            throw EmailJaCadastradoException()
+            throw EmailAlreadyRegisteredException()
         }
     }
 }

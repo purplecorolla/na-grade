@@ -1,6 +1,6 @@
-package dev.caio.api.auth
+package app.nagrade.api.auth
 
-import dev.caio.api.TestcontainersConfig
+import app.nagrade.api.TestcontainersConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
@@ -15,41 +15,42 @@ import java.net.http.HttpResponse
 import java.net.http.HttpResponse.BodyHandlers
 import java.util.UUID
 
-// Roda no Tomcat real: no MockMvc o Spring Session monta o cookie a partir do MockServletContext
-// e ignora server.servlet.session.cookie.*, então os atributos só podem ser conferidos aqui
+// Runs on the real Tomcat: with MockMvc, Spring Session builds the cookie from the MockServletContext
+// and ignores server.servlet.session.cookie.*, so the attributes can only be checked here
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfig::class)
-class CookieSessaoIntegrationTest {
+class SessionCookieIntegrationTest {
 
     @LocalServerPort
-    var porta: Int = 0
+    var port: Int = 0
 
     private val http = HttpClient.newHttpClient()
 
-    private fun uri(caminho: String) = URI.create("http://127.0.0.1:$porta$caminho")
+    private fun uri(path: String) = URI.create("http://127.0.0.1:$port$path")
 
-    private fun setCookie(resposta: HttpResponse<*>, nome: String): String =
-        resposta.headers().allValues("Set-Cookie").single { it.startsWith("$nome=") }
+    private fun setCookie(response: HttpResponse<*>, name: String): String =
+        response.headers().allValues("Set-Cookie").single { it.startsWith("$name=") }
 
-    private fun valor(setCookie: String) = setCookie.substringBefore(";").substringAfter("=")
+    private fun cookieValue(setCookie: String) = setCookie.substringBefore(";").substringAfter("=")
 
-    private fun post(caminho: String, xsrf: String, corpo: String): HttpResponse<String> = http.send(
-        HttpRequest.newBuilder(uri(caminho))
+    private fun post(path: String, xsrf: String, body: String): HttpResponse<String> = http.send(
+        HttpRequest.newBuilder(uri(path))
             .header("Content-Type", "application/json")
             .header("Cookie", "XSRF-TOKEN=$xsrf")
             .header("X-XSRF-TOKEN", xsrf)
-            .POST(BodyPublishers.ofString(corpo))
+            .POST(BodyPublishers.ofString(body))
             .build(),
         BodyHandlers.ofString(),
     )
 
     @Test
-    fun `cookie de sessão é HttpOnly e SameSite Lax`() {
-        val xsrf = valor(setCookie(http.send(HttpRequest.newBuilder(uri("/auth/csrf")).build(), BodyHandlers.discarding()), "XSRF-TOKEN"))
-        val corpo = """{"email":"fa-${UUID.randomUUID()}@nagrade.dev","senha":"senha-falsa-123"}"""
+    fun `session cookie is HttpOnly and SameSite Lax`() {
+        val csrf = http.send(HttpRequest.newBuilder(uri("/auth/csrf")).build(), BodyHandlers.discarding())
+        val xsrf = cookieValue(setCookie(csrf, "XSRF-TOKEN"))
+        val body = """{"email":"fan-${UUID.randomUUID()}@nagrade.dev","password":"fake-password-123"}"""
 
-        assertThat(post("/auth/cadastro", xsrf, corpo).statusCode()).isEqualTo(201)
-        val login = post("/auth/login", xsrf, corpo)
+        assertThat(post("/auth/register", xsrf, body).statusCode()).isEqualTo(201)
+        val login = post("/auth/login", xsrf, body)
 
         assertThat(login.statusCode()).isEqualTo(204)
         assertThat(setCookie(login, "SESSION")).contains("HttpOnly").contains("SameSite=Lax")

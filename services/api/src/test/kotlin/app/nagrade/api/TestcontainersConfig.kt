@@ -1,4 +1,4 @@
-package dev.caio.api
+package app.nagrade.api
 
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
@@ -14,7 +14,7 @@ class TestcontainersConfig {
     @ServiceConnection
     fun postgres(): PostgreSQLContainer = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
 
-    // GenericContainer usa um genérico recursivo (SELF) que o Kotlin não infere; <Nothing> resolve
+    // GenericContainer has a recursive generic (SELF) that Kotlin can't infer; <Nothing> solves it
     @Bean
     @ServiceConnection(name = "redis")
     fun redis(): GenericContainer<*> =
