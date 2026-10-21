@@ -23,7 +23,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Zerar o banco local (ex.: mudou usuário/senha no `.env`): `docker compose --env-file .env -f infra/docker-compose.yml down -v`
 - Testes: `cd services/api && ./mvnw verify`
 - Rodar: `cd services/api && ./mvnw spring-boot:run` (já usa o perfil `dev`) ou ▶ no `ApiApplication.kt`, com working dir
-  `services/api` e Active profiles `dev`
+  `services/api` e VM option `-Dspring.profiles.active=dev` (IntelliJ Community não tem o campo "Active profiles")
 - Testar pelo navegador (cadastro, login, conectar Spotify): `http://127.0.0.1:8080/playground.html`, só no perfil `dev`
 - Health: `http://127.0.0.1:8080/actuator/health`
 - Testar a API à mão: importar `services/api/insomnia/na-grade.yaml` no Insomnia (13.x). Endpoint novo entra na collection no mesmo PR

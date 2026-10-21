@@ -10,7 +10,13 @@ Pré-requisitos: JDK 21 e Docker Desktop. Copie o `.env.example` para `.env` e p
 cd services/api && ./mvnw spring-boot:run   # sobe PostgreSQL e Redis sozinho, no perfil dev
 ```
 
-No IntelliJ: ▶ no `ApiApplication.kt`, com working dir `services/api` e **Active profiles: `dev`**.
+No IntelliJ (Community): ▶ no `ApiApplication.kt` e, em **Edit Configurations...**:
+
+- **Working directory**: a pasta `services/api` (a api acha o compose e o `.env` a partir dela)
+- **Modify options → Add VM options**: `-Dspring.profiles.active=dev` (o ▶ não passa pelo Maven, que já liga o `dev`)
+
+No log deve aparecer `The following 1 profile is active: "dev"`. Só uma instância por vez: se a 8080 estiver
+ocupada, pare o `mvnw` do terminal antes.
 
 ## Conectar o Spotify pelo navegador
 
