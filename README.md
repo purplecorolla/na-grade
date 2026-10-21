@@ -6,6 +6,14 @@
 
 Pré-requisitos: JDK 21 e Docker Desktop. Copie o `.env.example` para `.env` e preencha (o `.env` nunca vai para o git).
 
+A `TOKEN_ENCRYPTION_KEY` (chave AES-256 dos tokens do Spotify no banco) é gerada uma vez, no Git Bash:
+
+```bash
+openssl rand -base64 32
+```
+
+Cole a saída no `.env`, sem aspas. Trocar a chave invalida os tokens salvos (é preciso reconectar o Spotify).
+
 ```bash
 cd services/api && ./mvnw spring-boot:run   # sobe PostgreSQL e Redis sozinho, no perfil dev
 ```
