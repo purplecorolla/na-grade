@@ -66,6 +66,16 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Pronto = testes passando, esteira verde e documentação atualizada
 - Daily: comentário na issue "Diário da Sprint N" (Fiz / Vou fazer / Travei em)
 
+## Chat × Claude Code
+- Claude Desktop (chat) é a sala de reunião: planejamento da sprint, histórias e critérios, arquitetura e rascunho
+  de ADRs, explicar o "porquê", destravar, review e retro
+- Claude Code é a mesa de trabalho: executa uma issue por vez até o PR (código, testes, migrations, git, esteira)
+  e mantém o CLAUDE.md atualizado
+- A ponte é o GitHub (issues, PRs, `docs/adr`) e este arquivo. O chat não vê o código nem a memória local:
+  decisão tomada no chat só vale depois de registrada na issue ou num ADR
+- O chat decide o caminho; o Claude Code transforma em plano verificado no código antes de editar. Se o código
+  contradisser a decisão, registre o conflito na issue e a dúvida volta para o chat
+
 ## Sprint 1 (atual)
 Objetivo: o usuário cria a conta, conecta o Spotify e vê os artistas mais ouvidos.
 Ordem: #8 CI → #15 migrar para Kotlin → #18 código em inglês → #9 cadastro e login por e-mail → #10 conectar Spotify → #11 criptografar tokens
