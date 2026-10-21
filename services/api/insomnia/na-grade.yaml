@@ -1,0 +1,365 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Na Grade API
+meta:
+  id: wrk_nagrade_api
+  created: 1792540800000
+  modified: 1792540800000
+  description: |-
+    Na Grade API (services/api). Run the API locally, then run the requests top to bottom
+    or use the Collection Runner. POSTs get the CSRF token automatically (folder pre-request script).
+collection:
+  - url: "{{ _.baseUrl }}/actuator/health"
+    name: Health
+    meta:
+      id: req_nagrade_health
+      created: 1792540800000
+      modified: 1792540800000
+      isPrivate: false
+      description: ""
+      sortKey: 100
+    method: GET
+    scripts:
+      afterResponse: |-
+        insomnia.test('API is UP', () => {
+          insomnia.expect(insomnia.response.code).to.equal(200);
+          insomnia.expect(insomnia.response.json().status).to.equal('UP');
+        });
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - name: 1. Auth flow
+    meta:
+      id: fld_nagrade_auth
+      created: 1792540800000
+      modified: 1792540800000
+      sortKey: 200
+      description: Register, login, read the logged-in user and logout, in this order.
+    scripts:
+      preRequest: &csrf |-
+        // Spring Security SPA mode: the XSRF-TOKEN cookie value must go back in the X-XSRF-TOKEN header.
+        // Fetches a new token when the jar has none (first POST, or after login/logout rotated it).
+        if (insomnia.request.method !== 'GET') {
+          const baseUrl = insomnia.environment.get('baseUrl');
+          const host = new URL(baseUrl).hostname;
+          let token = insomnia.cookies.get('XSRF-TOKEN');
+          if (!token) {
+            const res = await new Promise((resolve, reject) =>
+              insomnia.sendRequest(`${baseUrl}/auth/csrf`, (err, r) => (err ? reject(err) : resolve(r))),
+            );
+            const setCookie = res.headers.all()
+              .map(h => h.value)
+              .find(v => v.startsWith('XSRF-TOKEN='));
+            token = setCookie.split(';')[0].substring('XSRF-TOKEN='.length);
+            insomnia.cookies.jar().set(host, 'XSRF-TOKEN', token, () => {});
+          }
+          insomnia.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: token });
+        }
+    children:
+      - url: "{{ _.baseUrl }}/auth/register"
+        name: Register
+        meta:
+          id: req_nagrade_register
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 201 Created. Running it again with the same email returns 409.
+          sortKey: 210
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "{{ _.email }}",
+              "password": "{{ _.password }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('201 Created', () => {
+              insomnia.expect(insomnia.response.code).to.equal(201);
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/auth/login"
+        name: Login
+        meta:
+          id: req_nagrade_login
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 204 No Content and the SESSION cookie.
+          sortKey: 220
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "{{ _.email }}",
+              "password": "{{ _.password }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('204 and SESSION cookie', () => {
+              insomnia.expect(insomnia.response.code).to.equal(204);
+              insomnia.expect(insomnia.response.headers.all().some(h => h.value.startsWith('SESSION='))).to.be.true;
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/me"
+        name: Me
+        meta:
+          id: req_nagrade_me
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 200 with the logged-in user; 401 without a session.
+          sortKey: 230
+        method: GET
+        scripts:
+          afterResponse: |-
+            insomnia.test('200 with the logged-in user', () => {
+              insomnia.expect(insomnia.response.code).to.equal(200);
+              const user = insomnia.response.json();
+              insomnia.expect(user).to.have.all.keys('id', 'email', 'createdAt');
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/auth/logout"
+        name: Logout
+        meta:
+          id: req_nagrade_logout
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 204 No Content; the session is deleted from Redis.
+          sortKey: 240
+        method: POST
+        scripts:
+          afterResponse: |-
+            insomnia.test('204 No Content', () => {
+              insomnia.expect(insomnia.response.code).to.equal(204);
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/me"
+        name: Me after logout
+        meta:
+          id: req_nagrade_me_after_logout
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: 401 because the session no longer exists.
+          sortKey: 250
+        method: GET
+        scripts:
+          afterResponse: |-
+            insomnia.test('401 Unauthorized', () => {
+              insomnia.expect(insomnia.response.code).to.equal(401);
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: 2. Errors
+    meta:
+      id: fld_nagrade_errors
+      created: 1792540800000
+      modified: 1792540800000
+      sortKey: 300
+      description: Error responses. Run "1. Auth flow" first so the email exists.
+    scripts:
+      preRequest: *csrf
+    children:
+      - url: "{{ _.baseUrl }}/auth/register"
+        name: Register duplicate email (409)
+        meta:
+          id: req_nagrade_err_duplicate
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: ""
+          sortKey: 310
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "{{ _.email }}",
+              "password": "{{ _.password }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('409 email_already_registered', () => {
+              insomnia.expect(insomnia.response.code).to.equal(409);
+              insomnia.expect(insomnia.response.json().code).to.equal('email_already_registered');
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/auth/register"
+        name: Register invalid fields (400)
+        meta:
+          id: req_nagrade_err_validation
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: ""
+          sortKey: 320
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "not-an-email",
+              "password": "short"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('400 validation_failed with both fields', () => {
+              insomnia.expect(insomnia.response.code).to.equal(400);
+              const body = insomnia.response.json();
+              insomnia.expect(body.code).to.equal('validation_failed');
+              insomnia.expect(body.fields).to.eql(['email', 'password']);
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/auth/login"
+        name: Login wrong password (401)
+        meta:
+          id: req_nagrade_err_credentials
+          created: 1792540800000
+          modified: 1792540800000
+          isPrivate: false
+          description: ""
+          sortKey: 330
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "{{ _.email }}",
+              "password": "wrong-password-123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('401 invalid_credentials', () => {
+              insomnia.expect(insomnia.response.code).to.equal(401);
+              insomnia.expect(insomnia.response.json().code).to.equal('invalid_credentials');
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - url: "{{ _.baseUrl }}/auth/register"
+    name: POST without CSRF token (403)
+    meta:
+      id: req_nagrade_err_no_csrf
+      created: 1792540800000
+      modified: 1792540800000
+      isPrivate: false
+      description: Outside the folders on purpose, so no CSRF token is added.
+      sortKey: 400
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "email": "{{ _.email }}",
+          "password": "{{ _.password }}"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    scripts:
+      afterResponse: |-
+        insomnia.test('403 Forbidden', () => {
+          insomnia.expect(insomnia.response.code).to.equal(403);
+        });
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_nagrade_api
+    created: 1792540800000
+    modified: 1792540800000
+environments:
+  name: Base Environment
+  meta:
+    id: env_nagrade_base
+    created: 1792540800000
+    modified: 1792540800000
+    isPrivate: false
+  data:
+    baseUrl: http://127.0.0.1:8080
+    email: fan@nagrade.dev
+    password: fake-password-123

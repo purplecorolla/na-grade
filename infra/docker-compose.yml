@@ -2,10 +2,15 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: nagrade
-      POSTGRES_USER: nagrade
-      POSTGRES_PASSWORD: nagrade
+      POSTGRES_DB: ${DB_NAME:-nagrade}
+      POSTGRES_USER: ${DB_USER:?defina DB_USER no .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
     ports: ["5432:5432"]
+    # Usuário e senha só valem na 1ª inicialização do volume. Mudou no .env? Zere com: down -v
+    volumes: [pgdata:/var/lib/postgresql/data]
   redis:
     image: redis:7
     ports: ["6379:6379"]
+
+volumes:
+  pgdata:
