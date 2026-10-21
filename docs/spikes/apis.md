@@ -2,7 +2,7 @@
 
 | Recurso | Endpoint | Scope | Disponível | Observações |
 |---|---|---|---|---|
-| Artistas mais ouvidos | GET /me/top/artists | user-top-read | Sim (doc) | limit máx. 50; `genres` deprecated (doc em 2026-10-21). Teste real na #12 |
+| Artistas mais ouvidos | GET /me/top/artists | user-top-read | Sim (testado) | limit máx. 50; `genres` deprecated. Testado na #12 com conta real: 20 artistas, todos com imagem |
 | Busca de músicas | GET /search | nenhum | Sim (testado) | limit máx. 10 desde fev/2026 |
 | Criar playlist | POST /me/playlists | playlist-modify-public/private | Sim (doc) | Substituiu /users/{id}/playlists |
 | Adicionar músicas | POST /playlists/{id}/items | playlist-modify-public/private | Sim (doc) | Renomeado de /tracks |
@@ -17,6 +17,11 @@
 ## Decisões
 - Guardar o mbid do artista no banco depois da primeira busca, para não repetir a chamada.
 - Mapeamento Spotify → setlist.fm: buscar por nome com sort=relevance e aceitar só nome idêntico.
+
+## Atualização (Sprint 1, 2026-10-21)
+- `GET /me/top/artists` testado com conta real na #12: `time_range` short/medium/long e `images` (a mais larga primeiro) funcionam.
+- Além de `popularity` e `followers` (removidos), `genres` do artista aparece como deprecated na doc. A api não usa nenhum dos três.
+- O token do Spotify vence em 1 hora. A renovação pelo refresh token foi testada com WireMock; ainda falta ver acontecer com a conta real.
 
 ## Plano B
 Sem setlist recente: mostrar aviso e permitir montar a playlist pela busca.
