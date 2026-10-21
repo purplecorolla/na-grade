@@ -56,6 +56,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-session-data-redis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
 		<dependency>
@@ -157,7 +161,14 @@
 					<compilerPlugins>
 						<plugin>spring</plugin>
 						<plugin>jpa</plugin>
+						<plugin>all-open</plugin>
 					</compilerPlugins>
+					<pluginOptions>
+						<!-- entidades abertas para o Hibernate criar proxies (lazy loading) -->
+						<option>all-open:annotation=jakarta.persistence.Entity</option>
+						<option>all-open:annotation=jakarta.persistence.MappedSuperclass</option>
+						<option>all-open:annotation=jakarta.persistence.Embeddable</option>
+					</pluginOptions>
 				</configuration>
 				<dependencies>
 					<dependency>
