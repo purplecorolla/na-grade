@@ -297,14 +297,31 @@ class ArtistSetlistsIntegrationTest {
         assertThat(wiremock.findAll(getRequestedFor(urlPathMatching("/rest/1.0/.*")))).isEmpty()
     }
 
+    // The manual test got a 429 from setlist.fm for two calls in the same second: calls are spaced instead
     @Test
-    fun `a full second holds the call until the next one`() {
+    fun `consecutive calls to setlist fm are at least 600 ms apart`() {
+        val session = connectedSession()
+        val spotifyId = newSpotifyId()
+        stubSpotifyArtist(spotifyId, "Fake Band")
+        stubSearch("Fake Band", "mbid-spaced" to "Fake Band")
+        stubSetlists("mbid-spaced", setlist("s1", "23-08-2026"))
+
+        setlists(session, spotifyId).andExpect { status { isOk() } }
+
+        val times = wiremock.findAll(getRequestedFor(urlPathMatching("/rest/1.0/.*"))).map { it.loggedDate.time }.sorted()
+        assertThat(times).hasSize(2)
+        // 600 ms between the reserved slots; a little less here for the time WireMock takes to log the first one
+        assertThat(times[1] - times[0]).isGreaterThanOrEqualTo(550)
+    }
+
+    @Test
+    fun `a call waits for its slot when it is less than 2 seconds away`() {
         val session = connectedSession()
         val spotifyId = newSpotifyId()
         stubSpotifyArtist(spotifyId, "Fake Band")
         stubSearch("Fake Band", "mbid-held" to "Fake Band")
         stubSetlists("mbid-held", setlist("s1", "23-08-2026"))
-        fillSeconds(1)
+        reserveSlotsFor(Duration.ofSeconds(1))
 
         setlists(session, spotifyId).andExpect { status { isOk() } }
     }
@@ -314,7 +331,7 @@ class ArtistSetlistsIntegrationTest {
         val session = connectedSession()
         val spotifyId = newSpotifyId()
         stubSpotifyArtist(spotifyId, "Fake Band")
-        fillSeconds(4)
+        reserveSlotsFor(Duration.ofSeconds(5))
 
         setlists(session, spotifyId).andExpect {
             status { isServiceUnavailable() }
@@ -324,12 +341,10 @@ class ArtistSetlistsIntegrationTest {
         assertThat(wiremock.findAll(getRequestedFor(urlPathMatching("/rest/1.0/.*")))).isEmpty()
     }
 
-    // Uses up the 2 requests of the current second and of the following ones
-    private fun fillSeconds(count: Int) {
-        val now = Instant.now().epochSecond
-        for (second in now until now + count) {
-            redis.opsForValue().set("setlistfm:rate:$second", "2", Duration.ofSeconds(10))
-        }
+    // As if other calls had already taken the slots for this long. The slots use the Redis clock
+    private fun reserveSlotsFor(duration: Duration) {
+        val redisNow = checkNotNull(redis.execute { it.serverCommands().time() })
+        redis.opsForValue().set("setlistfm:next-slot", (redisNow + duration.toMillis()).toString(), Duration.ofSeconds(10))
     }
 
     @Test

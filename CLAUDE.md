@@ -57,7 +57,8 @@ Projeto de portfólio, trabalhado como numa empresa.
   `GET /rest/1.0/search/artists?artistName=X&sort=relevance` → aceitar só nome idêntico →
   guardar o `mbid` → `GET /rest/1.0/artist/{mbid}/setlists`
 - setlist.fm: 2 req/s e 1440/dia. Cache no Redis é obrigatório. Na api (#28): JSON cru no Redis (setlists 12h, busca 24h),
-  espera de até 2s no limite por segundo e cota própria de 1400/dia (`app.setlistfm.daily-quota`), contada em UTC
+  chamadas espaçadas de 600ms (`app.setlistfm.min-interval`; duas no mesmo segundo deram 429), espera de até 2s
+  e cota própria de 1400/dia (`app.setlistfm.daily-quota`), contada em UTC
 - Nomes idênticos repetidos no setlist.fm: vence o artista com setlist mais recente (warning no log). Exato via MusicBrainz: #48
 - Tutoriais anteriores a fev/2026 podem estar errados; confira a documentação oficial
 
