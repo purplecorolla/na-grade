@@ -39,7 +39,7 @@ jobs:
 
       - name: Relatório de cobertura
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: services/api/target/site/jacoco/
@@ -47,7 +47,7 @@ jobs:
 
       - name: Relatórios de teste
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: surefire-reports
           path: services/api/target/surefire-reports/
