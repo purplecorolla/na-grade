@@ -56,13 +56,16 @@ Projeto de portfólio, trabalhado como numa empresa.
 - setlist.fm: buscar por nome traz bandas cover. Fluxo certo:
   `GET /rest/1.0/search/artists?artistName=X&sort=relevance` → aceitar só nome idêntico →
   guardar o `mbid` → `GET /rest/1.0/artist/{mbid}/setlists`
-- setlist.fm: 2 req/s e 1440/dia. Cache no Redis é obrigatório
+- setlist.fm: 2 req/s e 1440/dia. Cache no Redis é obrigatório. Na api (#28): JSON cru no Redis (setlists 12h, busca 24h),
+  chamadas espaçadas de 600ms (`app.setlistfm.min-interval`; duas no mesmo segundo deram 429), espera de até 2s
+  e cota própria de 1400/dia (`app.setlistfm.daily-quota`), contada em UTC
+- Nomes idênticos repetidos no setlist.fm: vence o artista com setlist mais recente (warning no log). Exato via MusicBrainz: #48
 - Tutoriais anteriores a fev/2026 podem estar errados; confira a documentação oficial
 
 ## Segurança (inegociável)
 - Nunca leia, mostre ou commite o `.env`. Segredos só por variável de ambiente
 - Cada variável do `.env` tem um leitor só. `DB_*`/`REDIS_*` são do Docker Compose: no dev local a api pega a conexão
-  dos containers (os `${DB_*}` do `application.properties` só valem fora do Compose). `SPOTIFY_*` e `TOKEN_ENCRYPTION_KEY` são da api, que
+  dos containers (os `${DB_*}` do `application.properties` só valem fora do Compose). `SPOTIFY_*`, `TOKEN_ENCRYPTION_KEY` e `SETLISTFM_API_KEY` são da api, que
   importa o `.env` como `.properties` (valores sem aspas)
 - Tokens de provedores ficam cifrados no banco (AES-GCM, `EncryptedTokenConverter` na coluna, chave em `TOKEN_ENCRYPTION_KEY`).
   Coluna nova com token ou segredo usa o mesmo converter; nunca logue o valor cifrado ou decifrado

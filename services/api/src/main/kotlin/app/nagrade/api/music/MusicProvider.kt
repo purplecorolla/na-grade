@@ -7,6 +7,8 @@ interface MusicProvider {
 
     // Takes the user explicitly (not the session): the radar (Sprint 3) calls it in the background
     fun topArtists(userEmail: String, period: TimePeriod, limit: Int): List<Artist>
+
+    fun artist(userEmail: String, artistId: String): Artist
 }
 
 data class Artist(val id: String, val name: String, val imageUrl: String?)
@@ -18,4 +20,9 @@ class ProviderNotConnectedException(val provider: String) : RuntimeException("$p
 // The provider no longer accepts our tokens (refresh denied, access revoked): the connection was removed
 class ProviderReconnectRequiredException(val provider: String) : RuntimeException("$provider must be connected again")
 
+class ArtistNotFoundException(val provider: String, val artistId: String) : RuntimeException("$provider has no artist $artistId")
+
 class ProviderUnavailableException(val provider: String, cause: Throwable) : RuntimeException("$provider is unavailable", cause)
+
+// Our own limit for the provider was reached and waiting longer would hold the request too long: try again soon
+class ProviderBusyException(val provider: String) : RuntimeException("$provider is busy")

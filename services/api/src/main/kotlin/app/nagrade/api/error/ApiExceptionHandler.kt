@@ -2,9 +2,13 @@ package app.nagrade.api.error
 
 import app.nagrade.api.auth.EmailAlreadyRegisteredException
 import app.nagrade.api.connection.UnknownProviderException
+import app.nagrade.api.music.ArtistNotFoundException
+import app.nagrade.api.music.ProviderBusyException
 import app.nagrade.api.music.ProviderNotConnectedException
 import app.nagrade.api.music.ProviderReconnectRequiredException
 import app.nagrade.api.music.ProviderUnavailableException
+import app.nagrade.api.setlist.SetlistArtistNotFoundException
+import app.nagrade.api.setlist.SetlistQuotaExceededException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -48,6 +52,28 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
         log.warn("{} call failed: {}", e.provider, e.cause?.message)
         return problem(HttpStatus.BAD_GATEWAY, "Music provider unavailable", "provider_unavailable")
             .apply { setProperty("provider", e.provider) }
+    }
+
+    // Same code as above, but 503: nothing failed on the provider side, the request can be retried in a moment
+    @ExceptionHandler(ProviderBusyException::class)
+    fun providerBusy(e: ProviderBusyException): ProblemDetail =
+        problem(HttpStatus.SERVICE_UNAVAILABLE, "Music provider busy, try again", "provider_unavailable")
+            .apply { setProperty("provider", e.provider) }
+
+    @ExceptionHandler(ArtistNotFoundException::class)
+    fun artistNotFound(e: ArtistNotFoundException): ProblemDetail =
+        problem(HttpStatus.NOT_FOUND, "Artist not found", "artist_not_found")
+            .apply { setProperty("provider", e.provider) }
+
+    // Plan B of the spike: the frontend offers to build the playlist from a search
+    @ExceptionHandler(SetlistArtistNotFoundException::class)
+    fun setlistArtistNotFound(e: SetlistArtistNotFoundException): ProblemDetail =
+        problem(HttpStatus.NOT_FOUND, "Artist not found on the setlist source", "setlist_artist_not_found")
+
+    @ExceptionHandler(SetlistQuotaExceededException::class)
+    fun setlistQuotaExceeded(e: SetlistQuotaExceededException): ProblemDetail {
+        log.warn("{} daily quota exceeded", e.source)
+        return problem(HttpStatus.SERVICE_UNAVAILABLE, "Setlist source daily quota exceeded", "setlist_quota_exceeded")
     }
 
     // Same message for unknown email and wrong password, so the response doesn't reveal who has an account

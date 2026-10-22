@@ -6,6 +6,7 @@
 | Busca de músicas | GET /search | nenhum | Sim (testado) | limit máx. 10 desde fev/2026 |
 | Criar playlist | POST /me/playlists | playlist-modify-public/private | Sim (doc) | Substituiu /users/{id}/playlists |
 | Adicionar músicas | POST /playlists/{id}/items | playlist-modify-public/private | Sim (doc) | Renomeado de /tracks |
+| Artista por id | GET /artists/{id} | nenhum | Sim (doc, conferido em 2026-10-22) | Substitui o `GET /artists` em lote, removido em fev/2026. Usado na #28 para o nome do artista |
 | Top tracks do artista | GET /artists/{id}/top-tracks | - | Não | Removido em fev/2026 |
 | Achar artista | GET /rest/1.0/search/artists | x-api-key | Sim (testado) | Retorna o mbid; ordenar por relevance |
 | Setlists do artista | GET /rest/1.0/artist/{mbid}/setlists | x-api-key | Sim (testado) | Buscar por nome traz bandas cover; usar mbid |
