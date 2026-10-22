@@ -1,6 +1,7 @@
 package app.nagrade.api.music.spotify
 
 import app.nagrade.api.music.Artist
+import app.nagrade.api.music.ArtistNotFoundException
 import app.nagrade.api.music.MusicProvider
 import app.nagrade.api.music.ProviderNotConnectedException
 import app.nagrade.api.music.ProviderReconnectRequiredException
@@ -42,6 +43,23 @@ class SpotifyAdapter(
         }
         // images come widest first
         return page?.items.orEmpty().map { Artist(it.id, it.name, it.images.firstOrNull()?.url) }
+    }
+
+    // GET /artists/{id} is still there for development mode apps; only the batch GET /artists was removed (fev/2026)
+    override fun artist(userEmail: String, artistId: String): Artist {
+        val accessToken = accessToken(userEmail)
+        val artist = call(userEmail) {
+            try {
+                restClient.get()
+                    .uri("/artists/{id}", artistId)
+                    .headers { it.setBearerAuth(accessToken) }
+                    .retrieve()
+                    .body<SpotifyArtist>()
+            } catch (e: HttpClientErrorException.NotFound) {
+                null
+            }
+        } ?: throw ArtistNotFoundException(id, artistId)
+        return Artist(artist.id, artist.name, artist.images.firstOrNull()?.url)
     }
 
     // Refreshes the access token when it is about to expire (OAuth2ClientConfig) and saves the new one

@@ -14,6 +14,9 @@ openssl rand -base64 32
 
 Cole a saída no `.env`, sem aspas. Trocar a chave invalida os tokens salvos (é preciso reconectar o Spotify).
 
+A `SETLISTFM_API_KEY` sai de [setlist.fm/settings/api](https://www.setlist.fm/settings/api) (conta grátis). Sem ela, como sem as
+do Spotify, a api não sobe. A api se limita a 1400 chamadas por dia (a chave permite 1440) e guarda as respostas no Redis.
+
 ```bash
 cd services/api && ./mvnw spring-boot:run   # sobe PostgreSQL e Redis sozinho, no perfil dev
 ```

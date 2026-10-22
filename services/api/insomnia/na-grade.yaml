@@ -217,6 +217,43 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "{{ _.baseUrl }}/artists/7jy3rLJdDQY21OgRLCZ9sD/setlists"
+        name: Artist setlists
+        meta:
+          id: req_nagrade_artist_setlists
+          created: 1792627200000
+          modified: 1792627200000
+          isPrivate: false
+          description: |-
+            Recent setlists from setlist.fm for a Spotify artist id (Foo Fighters here; swap for any id from Top artists).
+            The first call needs Spotify connected (artist name); then the mapping is saved and the setlists are cached for 12h.
+            404 setlist_artist_not_found when setlist.fm has no artist with the identical name; 503 setlist_quota_exceeded
+            after 1400 calls in the day (UTC).
+          sortKey: 233.5
+        method: GET
+        scripts:
+          afterResponse: |-
+            insomnia.test('200 with the artist and setlists, or 409 when Spotify is not connected', () => {
+              const code = insomnia.response.code;
+              insomnia.expect([200, 409]).to.include(code);
+              if (code === 200) {
+                const body = insomnia.response.json();
+                insomnia.expect(body.artist).to.have.all.keys('spotifyId', 'name', 'mbid');
+                for (const setlist of body.setlists) {
+                  insomnia.expect(setlist).to.have.all.keys('id', 'eventDate', 'venue', 'city', 'country', 'tour', 'sets');
+                }
+              } else {
+                insomnia.expect(insomnia.response.json().code).to.equal('provider_not_connected');
+              }
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
       - url: "{{ _.baseUrl }}/me/connections/spotify"
         name: Disconnect Spotify
         meta:
