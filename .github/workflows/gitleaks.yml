@@ -3,7 +3,7 @@ name: gitleaks
 # Secrets in the commits of the PR (or of the push). Allowed fakes: .gitleaks.toml and "gitleaks:allow"
 on:
   push:
-    branches: [main]
+    branches: [develop, "release/**", main]
   pull_request:
 
 permissions:

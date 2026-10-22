@@ -3,7 +3,7 @@ name: CodeQL
 # Static analysis (SAST) of the api. Runs on every PR, so it can be a required check (#27)
 on:
   push:
-    branches: [main]
+    branches: [develop, "release/**", main]
   pull_request:
   schedule:
     # Weekly, to catch new queries even without code changes

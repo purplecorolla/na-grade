@@ -1,15 +1,12 @@
 name: api
 
+# Runs on every PR, with no path filter: "verify" is a required check, and a filtered check would stay pending
+# forever on a docs-only PR. On a PR that doesn't touch the api the tests are skipped and the check ends green.
+# On push it always runs everything, so the HEAD of develop is really tested (cut-release.yml checks it)
 on:
   push:
-    branches: [main]
-    paths:
-      - "services/api/**"
-      - ".github/workflows/api.yml"
+    branches: [develop, "release/**", main]
   pull_request:
-    paths:
-      - "services/api/**"
-      - ".github/workflows/api.yml"
 
 permissions:
   contents: read
@@ -26,8 +23,26 @@ jobs:
         working-directory: services/api
     steps:
       - uses: actions/checkout@v7
+        with:
+          # On a PR the checkout is the merge commit: its first parent is the base, so HEAD^1..HEAD is the PR diff
+          fetch-depth: 2
+
+      - name: A api mudou?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD^1 HEAD | grep -qE '^(services/api/|\.github/workflows/api\.yml$)'; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=false" >> "$GITHUB_OUTPUT"
+            echo "A api não mudou neste PR: testes pulados" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/setup-java@v6
+        if: steps.changes.outputs.api == 'true'
         with:
           distribution: temurin
           java-version: "21"
@@ -35,10 +50,11 @@ jobs:
           cache-dependency-path: services/api/pom.xml
 
       - name: Testes, cobertura e build
+        if: steps.changes.outputs.api == 'true'
         run: ./mvnw -B -ntp verify
 
       - name: Relatório de cobertura
-        if: always()
+        if: always() && steps.changes.outputs.api == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report

@@ -1,9 +1,11 @@
 # Dependency updates. Minor and patch versions come grouped in one PR per ecosystem, so the board isn't flooded;
-# majors come one by one (they may need code changes). Security updates come on their own, outside this schedule
+# majors come one by one (they may need code changes). Security updates come on their own, outside this schedule.
+# Everything targets develop (ADR 0007). It is already the default branch; explicit here so it stays right if that changes
 version: 2
 updates:
   - package-ecosystem: maven
     directory: /services/api
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -15,6 +17,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -27,6 +30,7 @@ updates:
   # Images of infra/docker-compose.yml (postgres, redis). The "docker" ecosystem comes with the first Dockerfile (#34)
   - package-ecosystem: docker-compose
     directory: /infra
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
