@@ -43,6 +43,7 @@ O playground só existe no perfil `dev`. Fora dele, `/playground.html` dá 404.
 ## Branches e releases
 GitFlow ([ADR 0007](docs/adr/0007-gitflow.md)): branch de trabalho → `develop` (dev) → `release/0.N.0` (homolog) → `main` (produção).
 - PRs de trabalho vão para a `develop`, com squash. Nada entra na `develop` ou na `main` sem PR e esteira verde.
-- Release no fim da sprint: Actions → **cut-release** (só corta com a esteira verde no HEAD da `develop`) → PR
+- Uma release por sprint, só na review da sprint (`v0.1.0` = Sprint 1 + fundação; a próxima é a `v0.2.0`).
+- Release: Actions → **cut-release** (só corta com a esteira verde no HEAD da `develop`) → PR
   `release/0.N.0 → main` com merge commit → tag `v0.N.0` automática → back-merge `main → develop` com merge commit.
 - Segurança na esteira: [docs/security/README.md](docs/security/README.md).
