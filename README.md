@@ -39,3 +39,10 @@ O Spotify não tem API de revogação: para tirar o acesso de vez, remova o app 
 [spotify.com/account/apps](https://www.spotify.com/account/apps/).
 
 O playground só existe no perfil `dev`. Fora dele, `/playground.html` dá 404.
+
+## Branches e releases
+GitFlow ([ADR 0007](docs/adr/0007-gitflow.md)): branch de trabalho → `develop` (dev) → `release/0.N.0` (homolog) → `main` (produção).
+- PRs de trabalho vão para a `develop`, com squash. Nada entra na `develop` ou na `main` sem PR e esteira verde.
+- Release no fim da sprint: Actions → **cut-release** (só corta com a esteira verde no HEAD da `develop`) → PR
+  `release/0.N.0 → main` com merge commit → tag `v0.N.0` automática → back-merge `main → develop` com merge commit.
+- Segurança na esteira: [docs/security/README.md](docs/security/README.md).
