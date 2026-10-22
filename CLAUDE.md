@@ -21,7 +21,8 @@ Projeto de portfólio, trabalhado como numa empresa.
 ## Comandos
 - Infra: sobe sozinha ao rodar a api (spring-boot-docker-compose, lê credenciais dos containers). Na mão: `docker compose --env-file .env -f infra/docker-compose.yml up -d`
 - Zerar o banco local (ex.: mudou usuário/senha no `.env`): `docker compose --env-file .env -f infra/docker-compose.yml down -v`
-- Testes: `cd services/api && ./mvnw verify`
+- Testes: `cd services/api && ./mvnw verify` (inclui cobertura JaCoCo: falha abaixo de 70% de linhas; relatório em
+  `services/api/target/site/jacoco/index.html`)
 - Rodar: `cd services/api && ./mvnw spring-boot:run` (já usa o perfil `dev`) ou ▶ no `ApiApplication.kt`, com working dir
   `services/api` e VM option `-Dspring.profiles.active=dev` (IntelliJ Community não tem o campo "Active profiles")
 - Testar pelo navegador (cadastro, login, conectar Spotify): `http://127.0.0.1:8080/playground.html`, só no perfil `dev`
@@ -66,6 +67,10 @@ Projeto de portfólio, trabalhado como numa empresa.
   Coluna nova com token ou segredo usa o mesmo converter; nunca logue o valor cifrado ou decifrado
 - Toda variável nova entra no `.env.example`, sem valor
 - Nada de chave, senha ou token hardcoded, nem em teste (use valores falsos)
+- Valor falso de teste que o gitleaks acusa: comentário `gitleaks:allow` na linha; `.gitleaks.toml` (arquivo + valor exato)
+  só onde o comentário mudaria o valor, como em `.properties`
+- Antes de todo PR: rodar `/security-review` e corrigir (ou abrir issue para) os achados confirmados
+- Esteira de segurança (CodeQL, gitleaks, JaCoCo, Dependabot): o que roda e como tratar alertas em `docs/security/README.md`
 
 ## Como trabalhamos (Scrum)
 - Sprints de 1 semana. Board "Na Grade" no GitHub Projects:

@@ -1,0 +1,33 @@
+name: gitleaks
+
+# Secrets in the commits of the PR (or of the push). Allowed fakes: .gitleaks.toml and "gitleaks:allow"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The action scans the range of commits of the PR, so it needs the history
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Same version used locally (docs/security/README.md)
+          GITLEAKS_VERSION: 8.30.1

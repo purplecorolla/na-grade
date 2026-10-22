@@ -1,0 +1,11 @@
+# gitleaks: default rules plus the fake values the tests need.
+# Prefer an inline "gitleaks:allow" comment on the line of a fake value (Kotlin, YAML). Use this file only where a
+# trailing comment would change the value (.properties) or the value is already in the history. See docs/security/README.md
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fake AES key used only by the tests: base64 of 'fake-token-encryption-key-32byte'"
+condition = "AND"
+paths = ['''services/api/src/test/resources/config/application\.properties''']
+regexes = ['''^ZmFrZS10b2tlbi1lbmNyeXB0aW9uLWtleS0zMmJ5dGU=$''']

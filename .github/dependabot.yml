@@ -1,0 +1,34 @@
+# Dependency updates. Minor and patch versions come grouped in one PR per ecosystem, so the board isn't flooded;
+# majors come one by one (they may need code changes). Security updates come on their own, outside this schedule
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /services/api
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      maven-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  # Images of infra/docker-compose.yml (postgres, redis). The "docker" ecosystem comes with the first Dockerfile (#34)
+  - package-ecosystem: docker-compose
+    directory: /infra
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(infra)"

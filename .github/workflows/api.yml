@@ -34,8 +34,16 @@ jobs:
           cache: maven
           cache-dependency-path: services/api/pom.xml
 
-      - name: Testes e build
+      - name: Testes, cobertura e build
         run: ./mvnw -B -ntp verify
+
+      - name: Relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: jacoco-report
+          path: services/api/target/site/jacoco/
+          if-no-files-found: ignore
 
       - name: Relatórios de teste
         if: failure()
