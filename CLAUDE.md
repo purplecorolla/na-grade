@@ -78,7 +78,8 @@ Projeto de portfólio, trabalhado como numa empresa.
   Backlog → Sprint atual → Fazendo → Revisão → Pronto. No máximo 2 itens em Fazendo
 - Fluxo (GitFlow, ADR 0007): issue → branch (`feat/`, `fix/`, `ci/`, `docs/`) a partir da `develop` → PR para a
   `develop` com `Closes #N` → squash merge. Nunca abra PR de trabalho para a `main`
-- Release (fim da sprint): Actions → `cut-release` com a versão `0.N.0` (só corta com a `develop` verde no HEAD) →
+- Release só na review da sprint, uma por sprint (próxima: `v0.2.0`, fim da Sprint 2). Fora da review, não rode o `cut-release`
+- Release: Actions → `cut-release` com a versão `0.N.0` (só corta com a `develop` verde no HEAD) →
   PR `release/0.N.0 → main` com **merge commit** → a tag `v0.N.0` sai sozinha → PR de back-merge `main → develop`
   com **merge commit**. Squash só nos PRs para a `develop` vindos de branch de trabalho
 - O `Closes #N` só fecha a issue sozinho no merge na branch padrão (`develop`)
