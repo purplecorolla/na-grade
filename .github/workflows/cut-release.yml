@@ -1,0 +1,74 @@
+name: cut-release
+
+# Cuts release/0.N.0 from develop (ADR 0007), only if the pipeline passed on the CURRENT HEAD of develop: the last
+# run of a workflow can belong to an older commit. The branch is created at the checked SHA, so a merge that lands
+# during the run doesn't sneak in. The PR release -> main is opened by hand: a PR opened with GITHUB_TOKEN wouldn't
+# trigger the required checks
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão da release (0.N.0, N = número da sprint)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: cut-release
+
+jobs:
+  cut:
+    name: cut-release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Validar a versão
+        run: |
+          if [[ ! "$VERSION" =~ ^0\.[0-9]+\.0$ ]]; then
+            echo "::error::Versão '$VERSION' fora do formato 0.N.0"
+            exit 1
+          fi
+          if gh api "repos/$REPO/git/ref/heads/release/$VERSION" --silent 2>/dev/null; then
+            echo "::error::release/$VERSION já existe"
+            exit 1
+          fi
+          if gh api "repos/$REPO/git/ref/tags/v$VERSION" --silent 2>/dev/null; then
+            echo "::error::A tag v$VERSION já existe: essa versão já foi para a produção"
+            exit 1
+          fi
+
+      - name: Esteira verde no HEAD da develop?
+        id: head
+        run: |
+          sha=$(gh api "repos/$REPO/commits/develop" --jq .sha)
+          echo "HEAD da develop: $sha"
+          failed=0
+          for workflow in api.yml codeql.yml gitleaks.yml; do
+            # Latest run of this workflow for exactly this commit (a re-run updates the same run)
+            result=$(gh api "repos/$REPO/actions/workflows/$workflow/runs?head_sha=$sha&branch=develop&event=push&per_page=1" \
+              --jq '.workflow_runs[0] // {} | "\(.status // "missing") \(.conclusion // "-")"')
+            echo "$workflow: $result"
+            if [[ "$result" != "completed success" ]]; then
+              echo "::error::$workflow não está verde no HEAD da develop ($sha): $result"
+              failed=1
+            fi
+          done
+          [[ $failed == 0 ]] || exit 1
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Criar a release
+        env:
+          SHA: ${{ steps.head.outputs.sha }}
+        run: |
+          gh api "repos/$REPO/git/refs" -f "ref=refs/heads/release/$VERSION" -f "sha=$SHA" --silent
+          {
+            echo "## release/$VERSION criada em \`$SHA\`"
+            echo "Próximo passo: abrir o PR \`release/$VERSION → main\` e fazer o merge com merge commit."
+            echo "A tag \`v$VERSION\` sai sozinha no merge."
+          } >> "$GITHUB_STEP_SUMMARY"

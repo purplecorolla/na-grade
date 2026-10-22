@@ -42,6 +42,7 @@ Projeto de portfólio, trabalhado como numa empresa.
 - ADR 0004: login próprio (e-mail/senha com BCrypt; Google depois). Spotify é só conexão opcional
 - ADR 0005: api em Kotlin (JVM 21 e Maven continuam)
 - ADR 0006: sessão no Redis com Spring Session, em vez de JWT. CSRF no modo SPA (`GET /auth/csrf` gera o cookie)
+- ADR 0007: GitFlow (`develop` → `release/0.N.0` → `main`), rulesets sem exceção, release só pelo `cut-release.yml`
 - Redirect URI do Spotify: `http://127.0.0.1:8080/login/oauth2/code/spotify` (não usar "localhost")
 - Migrations com Flyway (`V1__...sql`). Testes de integração com Testcontainers; adapters com WireMock
 
@@ -75,7 +76,12 @@ Projeto de portfólio, trabalhado como numa empresa.
 ## Como trabalhamos (Scrum)
 - Sprints de 1 semana. Board "Na Grade" no GitHub Projects:
   Backlog → Sprint atual → Fazendo → Revisão → Pronto. No máximo 2 itens em Fazendo
-- Fluxo: issue → branch (`feat/`, `fix/`, `ci/`, `docs/`) → PR com `Closes #N` → squash merge
+- Fluxo (GitFlow, ADR 0007): issue → branch (`feat/`, `fix/`, `ci/`, `docs/`) a partir da `develop` → PR para a
+  `develop` com `Closes #N` → squash merge. Nunca abra PR de trabalho para a `main`
+- Release (fim da sprint): Actions → `cut-release` com a versão `0.N.0` (só corta com a `develop` verde no HEAD) →
+  PR `release/0.N.0 → main` com **merge commit** → a tag `v0.N.0` sai sozinha → PR de back-merge `main → develop`
+  com **merge commit**. Squash só nos PRs para a `develop` vindos de branch de trabalho
+- O `Closes #N` só fecha a issue sozinho no merge na branch padrão (`develop`)
 - Commits no padrão Conventional Commits, em português: `feat(api): ...`, `docs: ...`
 - Pronto = testes passando, esteira verde e documentação atualizada
 - Daily: comentário na issue "Diário da Sprint N" (Fiz / Vou fazer / Travei em)
@@ -98,6 +104,5 @@ Resumo e pontos para a retro: último comentário da #7. #13 Login com Google se
 Objetivo: montar a playlist da setlist prevista. 21 pontos.
 Ordem: #26 Fundação DevSecOps → #27 GitFlow → #28 setlist.fm → #29 prever a setlist → #30 playlist no Spotify,
 com a #31 (dívidas) nos intervalos. Diário: #25. Se apertar, a #31 é a primeira a voltar para o Backlog.
-Depois da #27, os PRs vão para `develop` (as regras novas entram no CLAUDE.md nessa issue).
 Detalhes e critérios: `gh issue view N`. Backlog: #13 Google, #33 Épico DevSecOps, #34 Épico Infra AWS; Sprint 3: #32 front.
 ADRs são numerados por ordem de criação (nada de reservar número).

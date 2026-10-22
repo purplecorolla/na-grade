@@ -1,0 +1,29 @@
+name: branch-policy
+
+# A ruleset requires PRs on main but can't restrict where they come from. This check (required on main) does:
+# only release/0.N.0 branches of this repository reach production (ADR 0007)
+on:
+  pull_request:
+    branches: [main]
+    # edited: the base of an open PR can be changed to main
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+jobs:
+  source-branch:
+    name: source-branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Origem do PR é uma release?
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [[ "$HEAD_REPO" == "$REPO" && "$HEAD_REF" =~ ^release/0\.[0-9]+\.0$ ]]; then
+            echo "Origem $HEAD_REF: ok"
+          else
+            echo "::error::PR para a main só vem de release/0.N.0 deste repositório (veio de $HEAD_REPO:$HEAD_REF). Abra o PR para a develop."
+            exit 1
+          fi

@@ -7,13 +7,15 @@ Fundação criada na #26; o resto (Trivy, SBOM, ZAP, ASVS, threat model) está n
 
 | Ferramenta | O que procura | Quando | Check no PR |
 |---|---|---|---|
-| CodeQL (`codeql.yml`) | Falhas de segurança no código Kotlin (SAST, queries `security-extended`) | Todo PR, push na `main` e toda segunda | `CodeQL / analyze (java-kotlin)` |
-| gitleaks (`gitleaks.yml`) | Segredos nos commits do PR | Todo PR e push na `main` | `gitleaks` |
-| JaCoCo (`api.yml`) | Cobertura de linhas abaixo de 70% (sem a classe main e o pacote `config`) | No `./mvnw verify`, em todo PR que muda a api | `verify` |
+| CodeQL (`codeql.yml`) | Falhas de segurança no código Kotlin (SAST, queries `security-extended`) | Todo PR, push em `develop`, `release/**` e `main`, e toda segunda | `CodeQL / analyze (java-kotlin)` |
+| gitleaks (`gitleaks.yml`) | Segredos nos commits do PR | Todo PR e push em `develop`, `release/**` e `main` | `gitleaks` |
+| JaCoCo (`api.yml`) | Cobertura de linhas abaixo de 70% (sem a classe main e o pacote `config`) | No `./mvnw verify`, em todo PR que muda a api e em todo push | `verify` |
 | Dependabot (`dependabot.yml`) | Dependências desatualizadas e vulneráveis (maven, actions, imagens do compose) | Toda segunda; security updates assim que sai o alerta | PR próprio |
+| Política de branch (`branch-policy.yml`) | PR para a `main` que não venha de `release/0.N.0` (ADR 0007) | Todo PR para a `main` | `source-branch` |
 | Secret scanning + push protection (GitHub) | Tokens de provedores conhecidos | No `git push` (bloqueia antes de subir) | — |
 
-Os três checks acima entram como obrigatórios nas regras de branch (#27).
+Checks obrigatórios (rulesets, ADR 0007): `verify`, `analyze (java-kotlin)`, `CodeQL` e `gitleaks` em `develop` e `main`;
+`source-branch` só na `main`. O `cut-release` só corta a release com `api`, `CodeQL` e `gitleaks` verdes no HEAD da `develop`.
 
 ## Onde ver
 - **Aba Security** do repositório: alertas do CodeQL (Code scanning), do Dependabot e do Secret scanning.
