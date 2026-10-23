@@ -49,7 +49,10 @@ object SetlistPredictor {
         val songs = appearancesBySong(shows).values
             .filter { it.sumOf(Appearance::weight) / totalWeight >= MIN_SHARE - EPSILON }
             .map { predictedSong(it, totalWeight) }
-            .sortedWith(compareBy<Ranked> { it.song.encore }.thenBy { it.medianPosition }.thenByDescending { it.song.percentage }.thenBy { it.song.title })
+            .sortedWith(
+                compareBy<Ranked> { it.song.encore }.thenBy { it.medianRelativePosition }.thenBy { it.song.typicalPosition }
+                    .thenByDescending { it.song.percentage }.thenBy { it.song.title },
+            )
             .map { it.song }
 
         return Prediction(
@@ -81,7 +84,9 @@ object SetlistPredictor {
         else -> 1.0
     }
 
-    // Position counts the whole show (all sets, no tapes). A song played twice counts once, at the first position
+    // Position counts the whole show (all sets, no tapes). A song played twice counts once, at the first position.
+    // The relative position (0 opens, 1 closes) orders the prediction: a short festival set doesn't pull the closer
+    // to the middle (Everlong was 9th in a festival and 24th in a full show, manual test of #29)
     private fun appearancesBySong(shows: List<Show>): Map<String, List<Appearance>> {
         val bySong = LinkedHashMap<String, MutableList<Appearance>>()
         for (show in shows) {
@@ -89,7 +94,8 @@ object SetlistPredictor {
             show.songs.forEachIndexed { index, song ->
                 val key = songKey(song.name)
                 if (seen.add(key)) {
-                    bySong.getOrPut(key) { mutableListOf() } += Appearance(song.name, index + 1, song.encore, song.coverOf, show.weight)
+                    val relative = if (show.songs.size == 1) 1.0 else index.toDouble() / (show.songs.size - 1)
+                    bySong.getOrPut(key) { mutableListOf() } += Appearance(song.name, index + 1, relative, song.encore, song.coverOf, show.weight)
                 }
             }
         }
@@ -100,18 +106,17 @@ object SetlistPredictor {
         val weight = appearances.sumOf { it.weight }
         // Most frequent name first; on a tie, the one of the most recent show (the shows are sorted by date)
         val names = appearances.groupBy { it.name }.entries.sortedByDescending { (_, it) -> it.sumOf(Appearance::weight) }.map { it.key }
-        val medianPosition = appearances.map { it.position.toDouble() }.median()
         return Ranked(
             PredictedSong(
                 title = names.first(),
                 percentage = (weight / totalWeight * 100).roundToInt(),
-                typicalPosition = medianPosition.roundToInt(),
+                typicalPosition = appearances.map { it.position.toDouble() }.median().roundToInt(),
                 // Encore song: played in the encore in most of its (weighted) appearances
                 encore = appearances.filter { it.encore }.sumOf { it.weight } > weight / 2,
                 coverOf = appearances.firstNotNullOfOrNull { it.coverOf },
                 variants = names.drop(1),
             ),
-            medianPosition,
+            appearances.map { it.relativePosition }.median(),
         )
     }
 
@@ -125,9 +130,16 @@ object SetlistPredictor {
 
     private data class Show(val date: LocalDate, val songs: List<PlayedSong>, val weight: Double = 1.0)
 
-    private data class Appearance(val name: String, val position: Int, val encore: Boolean, val coverOf: String?, val weight: Double)
+    private data class Appearance(
+        val name: String,
+        val position: Int,
+        val relativePosition: Double,
+        val encore: Boolean,
+        val coverOf: String?,
+        val weight: Double,
+    )
 
-    private data class Ranked(val song: PredictedSong, val medianPosition: Double)
+    private data class Ranked(val song: PredictedSong, val medianRelativePosition: Double)
 }
 
 data class Prediction(

@@ -65,6 +65,24 @@ class SetlistPredictorTest {
         assertThat(prediction.songs.first().typicalPosition).isEqualTo(1)
     }
 
+    // Manual test of #29 with Foo Fighters: Everlong closes every show, 9th song in a short set and 24th in a full
+    // one. By the absolute position it tied with Exhausted and came first. The order uses the position relative
+    // to the size of each show (0 opens, 1 closes)
+    @Test
+    fun `the order uses the position relative to the size of the show, so short sets do not move the closer`() {
+        val full = core + listOf("Penultimate", "Closer")
+        val prediction = predict(
+            show(1, full),
+            show(2, full),
+            show(3, core.take(2) + "Closer"),
+            show(4, core.take(2) + "Closer"),
+            show(5, core.take(2) + "Closer"),
+        )
+
+        // Absolute positions of Closer: 12, 12, 3, 3, 3 (median 3, it would come third)
+        assertThat(prediction.titles().takeLast(2)).containsExactly("Penultimate", "Closer")
+    }
+
     @Test
     fun `encore songs go to the end even with an earlier position`() {
         val prediction = predict(
