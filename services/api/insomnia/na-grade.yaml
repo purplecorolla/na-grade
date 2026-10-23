@@ -254,6 +254,42 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "{{ _.baseUrl }}/artists/7jy3rLJdDQY21OgRLCZ9sD/predicted-setlist"
+        name: Predicted setlist
+        meta:
+          id: req_nagrade_predicted_setlist
+          created: 1792627200000
+          modified: 1792627200000
+          isPrivate: false
+          description: |-
+            Predicted setlist from the last 10 valid shows of the last 6 months (same setlists and cache as Artist setlists).
+            Songs in at least 30% of the shows, in the typical order, encore at the end. confidence: high (5+ shows),
+            medium (3-4), low (1-2). Without a recent setlist: 200 with warning no_recent_setlists and no songs.
+          sortKey: 233.7
+        method: GET
+        scripts:
+          afterResponse: |-
+            insomnia.test('200 with the prediction (or plan B), or 409 when Spotify is not connected', () => {
+              const code = insomnia.response.code;
+              insomnia.expect([200, 409]).to.include(code);
+              if (code === 200) {
+                const body = insomnia.response.json();
+                insomnia.expect(body).to.have.all.keys('artist', 'basedOn', 'confidence', 'songs', 'warning');
+                for (const song of body.songs) {
+                  insomnia.expect(song).to.have.all.keys('title', 'percentage', 'typicalPosition', 'encore', 'coverOf', 'variants');
+                }
+              } else {
+                insomnia.expect(insomnia.response.json().code).to.equal('provider_not_connected');
+              }
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
       - url: "{{ _.baseUrl }}/me/connections/spotify"
         name: Disconnect Spotify
         meta:

@@ -42,6 +42,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import org.springframework.test.web.servlet.get as mockGet
 
@@ -398,6 +399,63 @@ class ArtistSetlistsIntegrationTest {
             jsonPath("$.code") { value("provider_not_connected") }
         }
     }
+
+    // The rules of the prediction are in SetlistPredictorTest; here, only the endpoint over the setlists of #28
+    @Test
+    fun `predicted setlist from the recent shows`() {
+        val session = connectedSession()
+        val spotifyId = newSpotifyId()
+        stubSpotifyArtist(spotifyId, "Fake Band")
+        stubSearch("Fake Band", "mbid-predicted" to "Fake Band")
+        val sets = """[{"song":[{"name":"Opener"},{"name":"Hit"},{"name":"Old Hit","cover":{"name":"Other Band"}}]},{"encore":1,"song":[{"name":"Closer"}]}]"""
+        stubSetlists("mbid-predicted", *(1..3).map { setlist("p$it", daysAgo(it * 7L), sets) }.toTypedArray())
+
+        mockMvc.mockGet("/artists/$spotifyId/predicted-setlist") { cookie(session) }.andExpect {
+            status { isOk() }
+            jsonPath("$.artist.mbid") { value("mbid-predicted") }
+            jsonPath("$.basedOn.shows") { value(3) }
+            jsonPath("$.basedOn.weightedShows") { value(3.0) }
+            jsonPath("$.basedOn.from") { value(LocalDate.now().minusDays(21).toString()) }
+            jsonPath("$.confidence") { value("medium") }
+            jsonPath("$.songs[*].title") { value(contains("Opener", "Hit", "Old Hit", "Closer")) }
+            jsonPath("$.songs[0].percentage") { value(100) }
+            jsonPath("$.songs[0].typicalPosition") { value(1) }
+            jsonPath("$.songs[2].coverOf") { value("Other Band") }
+            jsonPath("$.songs[3].encore") { value(true) }
+            jsonPath("$.songs[0].variants", hasSize<Any>(0))
+            jsonPath("$.warning") { value(nullValue()) }
+        }
+    }
+
+    @Test
+    fun `plan B - without a recent setlist the prediction is a warning without songs`() {
+        val session = connectedSession()
+        val spotifyId = newSpotifyId()
+        stubSpotifyArtist(spotifyId, "Quiet Band")
+        stubSearch("Quiet Band", "mbid-quiet" to "Quiet Band")
+        stubSetlists("mbid-quiet", setlist("empty", daysAgo(3), "[]"), setlist("future", daysAgo(-10)))
+
+        mockMvc.mockGet("/artists/$spotifyId/predicted-setlist") { cookie(session) }.andExpect {
+            status { isOk() }
+            jsonPath("$.artist.name") { value("Quiet Band") }
+            jsonPath("$.songs", hasSize<Any>(0))
+            jsonPath("$.confidence") { value(nullValue()) }
+            jsonPath("$.basedOn") { value(nullValue()) }
+            jsonPath("$.warning") { value("no_recent_setlists") }
+        }
+    }
+
+    @Test
+    fun `the predicted setlist needs a login and a valid Spotify id`() {
+        mockMvc.mockGet("/artists/${newSpotifyId()}/predicted-setlist").andExpect { status { isUnauthorized() } }
+        mockMvc.mockGet("/artists/not-a-spotify-id/predicted-setlist") { cookie(connectedSession()) }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.fields") { value(contains("spotifyId")) }
+        }
+    }
+
+    // setlist.fm date format, relative to today: the prediction only looks at the last 6 months
+    private fun daysAgo(days: Long) = LocalDate.now().minusDays(days).format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
 
     @Test
     fun `without a login returns 401 without a body code`() {
