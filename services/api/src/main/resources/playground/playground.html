@@ -45,6 +45,16 @@
     <button data-action="topArtists">GET /me/top-artists</button>
   </fieldset>
 
+  <fieldset>
+    <legend>Show</legend>
+    <input id="artist" placeholder="Spotify artist id (from top artists)" value="7jy3rLJdDQY21OgRLCZ9sD" size="26">
+    <input id="showDate" type="date">
+    <br>
+    <button data-action="setlists">GET setlists</button>
+    <button data-action="predicted">GET predicted setlist</button>
+    <button data-action="playlist">POST playlist</button>
+  </fieldset>
+
   <pre id="output">Responses show up here.</pre>
 
   <script>
@@ -73,6 +83,8 @@
       password: document.getElementById('password').value,
     });
 
+    const artist = () => encodeURIComponent(document.getElementById('artist').value.trim());
+
     const actions = {
       register: () => call('POST', '/auth/register', credentials()),
       login: () => call('POST', '/auth/login', credentials()),
@@ -81,6 +93,9 @@
       connections: () => call('GET', '/me/connections'),
       disconnect: () => call('DELETE', '/me/connections/spotify'),
       topArtists: () => call('GET', `/me/top-artists?period=${document.getElementById('period').value}`),
+      setlists: () => call('GET', `/artists/${artist()}/setlists`),
+      predicted: () => call('GET', `/artists/${artist()}/predicted-setlist`),
+      playlist: () => call('POST', `/artists/${artist()}/playlist`, { showDate: document.getElementById('showDate').value }),
     };
 
     document.querySelectorAll('[data-action]').forEach((button) =>

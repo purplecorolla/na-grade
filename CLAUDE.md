@@ -50,6 +50,8 @@ Projeto de portfólio, trabalhado como numa empresa.
 - Spotify mudou a API em fev/2026 no modo de desenvolvimento:
   - Criar playlist: `POST /me/playlists`. Adicionar músicas: `POST /playlists/{id}/items`
   - Busca: `limit` máximo 10
+  - Apagar playlist no app só a tira da biblioteca (continua existindo): checar com `GET /me/library/contains`
+    (scope `playlist-read-private`, #30)
   - Removidos: `GET /artists/{id}/top-tracks`, browse, e os campos `popularity` e `followers`
   - `genres` do artista está deprecated (doc conferida em 2026-10-21): não usar
   - Dono precisa de Premium; até 5 usuários autorizados

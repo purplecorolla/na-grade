@@ -1,12 +1,14 @@
 package app.nagrade.api.prediction
 
+import app.nagrade.api.music.SongTitle
 import app.nagrade.api.setlist.Setlist
 import com.fasterxml.jackson.annotation.JsonValue
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
 // Predicted setlist of an artist from their recent shows (#29). Pure business rule: no Spring, no HTTP.
-// The rules were decided in the planning chat (comments of #29); SetlistPredictorTest documents each one
+// The rules were decided in the planning chat (comments of #29); SetlistPredictorTest documents each one.
+// Variants of a song are grouped by SongTitle, the same rule the playlist search (#30) uses
 object SetlistPredictor {
 
     const val MAX_SHOWS = 10
@@ -24,11 +26,6 @@ object SetlistPredictor {
     const val HIGH_CONFIDENCE_SHOWS = 5
     const val MEDIUM_CONFIDENCE_SHOWS = 3
 
-    // Parenthesized suffixes that mark a version of the same song: "Fooley (LEECH Ambient Queen Remix)".
-    // Any other parentheses name another song: "Epic (Part 2)"
-    private val SUFFIX = Regex("""\s*\(([^()]*)\)\s*$""")
-    private val VERSION_WORDS = Regex("""\b(remix|mix|edit|version|live|acoustic|demo)\b""", RegexOption.IGNORE_CASE)
-    private val SPACES = Regex("""\s+""")
     private const val EPSILON = 1e-9
 
     fun predict(setlists: List<Setlist>, today: LocalDate): Prediction {
@@ -67,17 +64,6 @@ object SetlistPredictor {
         )
     }
 
-    // Same song for every variant: without version suffixes, lowercase, curly apostrophe as straight
-    fun songKey(name: String): String {
-        var key = name.trim()
-        while (true) {
-            val suffix = SUFFIX.find(key) ?: break
-            if (!VERSION_WORDS.containsMatchIn(suffix.groupValues[1])) break
-            key = key.substring(0, suffix.range.first)
-        }
-        return key.ifBlank { name }.replace('’', '\'').replace('‘', '\'').lowercase().replace(SPACES, " ").trim()
-    }
-
     private fun weightOf(sizeRatio: Double): Double? = when {
         sizeRatio < INCOMPLETE_RATIO -> null
         sizeRatio <= FESTIVAL_RATIO -> FESTIVAL_WEIGHT
@@ -92,7 +78,7 @@ object SetlistPredictor {
         for (show in shows) {
             val seen = mutableSetOf<String>()
             show.songs.forEachIndexed { index, song ->
-                val key = songKey(song.name)
+                val key = SongTitle.normalize(song.name)
                 if (seen.add(key)) {
                     val relative = if (show.songs.size == 1) 1.0 else index.toDouble() / (show.songs.size - 1)
                     bySong.getOrPut(key) { mutableListOf() } += Appearance(song.name, index + 1, relative, song.encore, song.coverOf, show.weight)
