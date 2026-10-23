@@ -2,11 +2,14 @@ package app.nagrade.api.playlist
 
 import app.nagrade.api.music.MusicProvider
 import app.nagrade.api.music.PlaylistNotFoundException
+import app.nagrade.api.music.ProviderUnavailableException
+import app.nagrade.api.music.TrackSearchFailedException
 import app.nagrade.api.prediction.PredictedSong
 import app.nagrade.api.prediction.SetlistPredictor
 import app.nagrade.api.setlist.ArtistSetlistsService
 import app.nagrade.api.setlist.MappedArtist
 import app.nagrade.api.user.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionTemplate
@@ -34,8 +37,19 @@ class PlaylistService(
         val basedOn = prediction.basedOn
         if (prediction.songs.isEmpty() || basedOn == null) throw NoRecentSetlistsException()
 
-        // The searches run before the transaction, so the row stays locked only while the playlist is written
-        val matches = prediction.songs.associateWith { findTrack(userEmail, it, recent.artist) }
+        // The searches run before the transaction, so the row stays locked only while the playlist is written.
+        // A search that fails on the provider's side leaves that song out; all of them failing means it is down
+        val failures = mutableListOf<TrackSearchFailedException>()
+        val matches = prediction.songs.associateWith { song ->
+            try {
+                findTrack(userEmail, song, recent.artist)
+            } catch (e: TrackSearchFailedException) {
+                log.warn("{} search failed for \"{}\": {}", e.provider, e.title, e.cause?.message)
+                failures += e
+                null
+            }
+        }
+        if (failures.size == prediction.songs.size) throw ProviderUnavailableException(musicProvider.id, failures.last())
         val tracks = matches.mapNotNull { (_, track) -> track }
         val notFound = matches.filterValues { it == null }.keys.map { it.title }
         if (tracks.isEmpty()) throw NoTracksFoundException(notFound)
@@ -82,6 +96,7 @@ class PlaylistService(
     }
 
     private companion object {
+        val log = LoggerFactory.getLogger(PlaylistService::class.java)
         val NAME_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     }
 }

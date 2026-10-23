@@ -27,6 +27,8 @@
 - **Apagar uma playlist no app do Spotify não apaga a playlist:** só a tira da biblioteca do usuário. Ela continua existindo e
   `PUT /playlists/{id}/items` responde 200, não 404. Para saber se o usuário ainda tem a playlist, use `GET /me/library/contains`
   (scope `playlist-read-private`, pedido a partir da #30: quem conectou antes reconecta uma vez).
+- A busca do Spotify respondeu **503** a títulos com `/`, `!`, `$` ou `.` dentro dos filtros `track:"…"`/`artist:"…"`
+  (Foo Fighters e Slayyyter, teste manual da #30). A query leva só letras, números e apóstrofo; a escolha da faixa compara os títulos reais.
 - 429 do Spotify vem com `Retry-After` (segundos). A api espera uma vez, se for curto; repetiu, 502.
 - O token do Spotify vence em 1 hora. A renovação pelo refresh token foi testada com WireMock; ainda falta ver acontecer com a conta real.
 

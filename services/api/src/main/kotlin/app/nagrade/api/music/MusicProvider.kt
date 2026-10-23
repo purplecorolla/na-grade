@@ -13,7 +13,8 @@ interface MusicProvider {
     // Playlists (#30). Fails fast, before any search, when the connection lacks the playlist scopes
     fun requirePlaylistAccess(userEmail: String)
 
-    // Candidates in the provider's order; picking the right one is a business rule (TrackMatcher)
+    // Candidates in the provider's order; picking the right one is a business rule (TrackMatcher).
+    // TrackSearchFailedException when the provider fails on this one search (5xx)
     fun searchTracks(userEmail: String, title: String, artistName: String): List<Track>
 
     // Private: the playlist of whoever goes to the show
@@ -54,3 +55,6 @@ class ProviderUnavailableException(val provider: String, cause: Throwable) : Run
 class ProviderBusyException(val provider: String) : RuntimeException("$provider is busy")
 
 class PlaylistNotFoundException(val provider: String, val playlistId: String) : RuntimeException("$provider has no playlist $playlistId")
+
+// The provider failed on one search (Spotify answered 503 to some queries in the manual test of #30)
+class TrackSearchFailedException(val provider: String, val title: String, cause: Throwable) : RuntimeException("$provider search failed", cause)

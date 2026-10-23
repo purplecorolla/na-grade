@@ -11,6 +11,7 @@ import app.nagrade.api.music.ProviderUnavailableException
 import app.nagrade.api.music.TimePeriod
 import app.nagrade.api.music.Track
 import app.nagrade.api.music.TrackArtist
+import app.nagrade.api.music.TrackSearchFailedException
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
@@ -21,6 +22,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.body
@@ -80,16 +82,21 @@ class SpotifyAdapter(
         }
     }
 
-    // limit is at most 10 since fev/2026. Quotes would break the field filters of the query
+    // limit is at most 10 since fev/2026. Only letters, digits and apostrophes go into the field filters: Spotify
+    // answered 503 to titles with "/", "!", "$" or "." (manual test of #30). TrackMatcher compares the real titles
     override fun searchTracks(userEmail: String, title: String, artistName: String): List<Track> {
         val accessToken = accessToken(userEmail)
-        val query = "track:\"${title.replace("\"", "")}\" artist:\"${artistName.replace("\"", "")}\""
+        val query = "track:\"${searchTerm(title)}\" artist:\"${searchTerm(artistName)}\""
         val page = call(userEmail) {
-            restClient.get()
-                .uri { it.path("/search").queryParam("q", "{q}").queryParam("type", "track").queryParam("limit", SEARCH_LIMIT).build(query) }
-                .headers { it.setBearerAuth(accessToken) }
-                .retrieve()
-                .body<SearchPage>()
+            try {
+                restClient.get()
+                    .uri { it.path("/search").queryParam("q", "{q}").queryParam("type", "track").queryParam("limit", SEARCH_LIMIT).build(query) }
+                    .headers { it.setBearerAuth(accessToken) }
+                    .retrieve()
+                    .body<SearchPage>()
+            } catch (e: HttpServerErrorException) {
+                throw TrackSearchFailedException(id, title, e)
+            }
         }
         return page?.tracks?.items.orEmpty().filterNotNull().map { track ->
             Track(track.uri, track.name, track.artists.map { TrackArtist(it.id, it.name) })
@@ -156,6 +163,8 @@ class SpotifyAdapter(
         return contains?.firstOrNull() == true
     }
 
+    private fun searchTerm(text: String) = text.replace(SEARCH_SYMBOLS, " ").replace(SPACES, " ").trim()
+
     override fun playlistUrl(playlistId: String) = "https://open.spotify.com/playlist/$playlistId"
 
     // Refreshes the access token when it is about to expire (OAuth2ClientConfig) and saves the new one
@@ -200,6 +209,8 @@ class SpotifyAdapter(
     private companion object {
         val PLAYLIST_SCOPES = setOf("playlist-modify-private", "playlist-read-private")
         const val SEARCH_LIMIT = 10
+        val SEARCH_SYMBOLS = Regex("""[^\p{L}\p{N}\s'’]""")
+        val SPACES = Regex("""\s+""")
         const val MAX_ITEMS_PER_REQUEST = 100
         const val MAX_RETRY_AFTER_SECONDS = 5L
     }

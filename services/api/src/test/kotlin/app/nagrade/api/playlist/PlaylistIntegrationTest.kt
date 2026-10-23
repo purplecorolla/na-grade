@@ -165,7 +165,7 @@ class PlaylistIntegrationTest {
         stubSearch("Hit", "Fake Band", track("t-hit", "Hit - Remastered 2011", spotifyId))
         stubSearch("Old Hit", "Fake Band")
         stubSearch("Old Hit", "Other Band", track("t-old-hit", "Old Hit", "other-id", "Other Band"))
-        stubSearch("Medley A / Medley B", "Fake Band")
+        stubSearch("Medley A Medley B", "Fake Band")
         stubSearch("Closer", "Fake Band", track("t-closer", "Closer", spotifyId))
     }
 
@@ -349,6 +349,62 @@ class PlaylistIntegrationTest {
             jsonPath("$.provider") { value("spotify") }
         }
         assertThat(wiremock.findAll(getRequestedFor(urlPathEqualTo("/v1/search")))).hasSize(2)
+        assertThat(wiremock.findAll(postRequestedFor(urlPathEqualTo("/v1/me/playlists")))).isEmpty()
+    }
+
+    // Manual test of #30: Spotify answered 503 to the searches of Foo Fighters ("/" in a medley, "Late!") and Slayyyter
+    // ("$", "."). The query keeps only letters, digits and apostrophes; TrackMatcher still compares the real titles
+    @Test
+    fun `symbols are left out of the search query, not out of the match`() {
+        val fan = connectedFan()
+        val spotifyId = newSpotifyId()
+        stubBand(
+            spotifyId,
+            sets = """[{"song":[{"name":"${'$'}tarfucker"},{"name":"Daddy A.F."},{"name":"Medley A / Medley B"},{"name":"Marigold","cover":{"name":"Late!"}}]}]""",
+        )
+        stubSearch("tarfucker", "Fake Band", track("t-star", "${'$'}tarfucker", spotifyId))
+        stubSearch("Daddy A F", "Fake Band", track("t-daddy", "Daddy A.F.", spotifyId))
+        stubSearch("Medley A Medley B", "Fake Band")
+        stubSearch("Marigold", "Fake Band")
+        stubSearch("Marigold", "Late", track("t-marigold", "Marigold", "late-id", "Late!"))
+        stubCreatePlaylist("pl-1")
+
+        generate(fan.session, spotifyId).andExpect {
+            status { isCreated() }
+            jsonPath("$.tracks[*].title") { value(contains("${'$'}tarfucker", "Daddy A.F.", "Marigold")) }
+            jsonPath("$.tracks[2].originalVersion") { value(true) }
+            jsonPath("$.notFound") { value(contains("Medley A / Medley B")) }
+        }
+    }
+
+    @Test
+    fun `a search that fails on Spotify's side leaves only that song out`() {
+        val fan = connectedFan()
+        val spotifyId = newSpotifyId()
+        stubBand(spotifyId)
+        stubSpotifyTracks(spotifyId)
+        wiremock.stubFor(get(urlPathEqualTo("/v1/search")).withQueryParam("q", containing("track:\"Hit\"")).willReturn(aResponse().withStatus(503)))
+        stubCreatePlaylist("pl-1")
+
+        generate(fan.session, spotifyId).andExpect {
+            status { isCreated() }
+            jsonPath("$.tracks[*].title") { value(contains("Opener", "Old Hit", "Closer")) }
+            jsonPath("$.notFound") { value(contains("Hit", "Medley A / Medley B")) }
+        }
+    }
+
+    @Test
+    fun `every search failing means Spotify is down`() {
+        val fan = connectedFan()
+        val spotifyId = newSpotifyId()
+        stubBand(spotifyId)
+        wiremock.stubFor(get(urlPathEqualTo("/v1/search")).willReturn(aResponse().withStatus(503)))
+
+        generate(fan.session, spotifyId).andExpect {
+            status { isBadGateway() }
+            jsonPath("$.code") { value("provider_unavailable") }
+            jsonPath("$.provider") { value("spotify") }
+        }
         assertThat(wiremock.findAll(postRequestedFor(urlPathEqualTo("/v1/me/playlists")))).isEmpty()
     }
 
