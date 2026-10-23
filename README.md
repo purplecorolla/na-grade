@@ -37,6 +37,12 @@ ocupada, pare o `mvnw` do terminal antes.
 4. **GET /me/top-artists** mostra seus artistas mais ouvidos (`period`: `short` ~4 semanas, `medium` ~6 meses, `long` ~1 ano).
    O token do Spotify é renovado sozinho; se o Spotify recusar, a resposta é 401 `provider_reconnect_required` e é só conectar de novo.
 5. **Disconnect Spotify** apaga os tokens do nosso banco.
+6. Em **Show**, com o id de um artista (vem no top artists) e a data do show:
+   **GET setlists** (shows recentes do setlist.fm), **GET predicted setlist** (a previsão) e **POST playlist**
+   (cria a playlist privada no seu Spotify; gerar de novo para o mesmo artista e data atualiza a mesma).
+
+Conectou o Spotify antes da #30? A playlist pede um scope novo (`playlist-read-private`): a resposta vem 401
+`provider_reconnect_required` e é só conectar de novo, uma vez.
 
 O Spotify não tem API de revogação: para tirar o acesso de vez, remova o app em
 [spotify.com/account/apps](https://www.spotify.com/account/apps/).

@@ -9,9 +9,36 @@ interface MusicProvider {
     fun topArtists(userEmail: String, period: TimePeriod, limit: Int): List<Artist>
 
     fun artist(userEmail: String, artistId: String): Artist
+
+    // Playlists (#30). Fails fast, before any search, when the connection lacks the playlist scopes
+    fun requirePlaylistAccess(userEmail: String)
+
+    // Candidates in the provider's order; picking the right one is a business rule (TrackMatcher).
+    // TrackSearchFailedException when the provider fails on this one search (5xx)
+    fun searchTracks(userEmail: String, title: String, artistName: String): List<Track>
+
+    // Private: the playlist of whoever goes to the show
+    fun createPlaylist(userEmail: String, name: String, description: String): Playlist
+
+    fun addPlaylistItems(userEmail: String, playlistId: String, trackUris: List<String>)
+
+    // Replaces every item. PlaylistNotFoundException when the playlist doesn't exist anymore
+    fun replacePlaylistItems(userEmail: String, playlistId: String, trackUris: List<String>)
+
+    // Deleting a playlist in the Spotify app only removes it from the user's library
+    fun isInLibrary(userEmail: String, playlistId: String): Boolean
+
+    fun playlistUrl(playlistId: String): String
 }
 
 data class Artist(val id: String, val name: String, val imageUrl: String?)
+
+// A track in the provider, with all its artists (featured ones too)
+data class Track(val uri: String, val name: String, val artists: List<TrackArtist>)
+
+data class TrackArtist(val id: String, val name: String)
+
+data class Playlist(val id: String, val url: String)
 
 enum class TimePeriod { SHORT, MEDIUM, LONG }
 
@@ -26,3 +53,8 @@ class ProviderUnavailableException(val provider: String, cause: Throwable) : Run
 
 // Our own limit for the provider was reached and waiting longer would hold the request too long: try again soon
 class ProviderBusyException(val provider: String) : RuntimeException("$provider is busy")
+
+class PlaylistNotFoundException(val provider: String, val playlistId: String) : RuntimeException("$provider has no playlist $playlistId")
+
+// The provider failed on one search (Spotify answered 503 to some queries in the manual test of #30)
+class TrackSearchFailedException(val provider: String, val title: String, cause: Throwable) : RuntimeException("$provider search failed", cause)

@@ -7,6 +7,8 @@ import app.nagrade.api.music.ProviderBusyException
 import app.nagrade.api.music.ProviderNotConnectedException
 import app.nagrade.api.music.ProviderReconnectRequiredException
 import app.nagrade.api.music.ProviderUnavailableException
+import app.nagrade.api.playlist.NoRecentSetlistsException
+import app.nagrade.api.playlist.NoTracksFoundException
 import app.nagrade.api.setlist.SetlistArtistNotFoundException
 import app.nagrade.api.setlist.SetlistQuotaExceededException
 import org.slf4j.LoggerFactory
@@ -75,6 +77,16 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
         log.warn("{} daily quota exceeded", e.source)
         return problem(HttpStatus.SERVICE_UNAVAILABLE, "Setlist source daily quota exceeded", "setlist_quota_exceeded")
     }
+
+    // 422: the request is fine, but there is nothing to build the playlist with
+    @ExceptionHandler(NoRecentSetlistsException::class)
+    fun noRecentSetlists(e: NoRecentSetlistsException): ProblemDetail =
+        problem(HttpStatus.UNPROCESSABLE_CONTENT, "No recent setlist to predict from", "no_recent_setlists")
+
+    @ExceptionHandler(NoTracksFoundException::class)
+    fun noTracksFound(e: NoTracksFoundException): ProblemDetail =
+        problem(HttpStatus.UNPROCESSABLE_CONTENT, "No predicted song was found on the music provider", "no_tracks_found")
+            .apply { setProperty("notFound", e.notFound) }
 
     // Same message for unknown email and wrong password, so the response doesn't reveal who has an account
     @ExceptionHandler(AuthenticationException::class)

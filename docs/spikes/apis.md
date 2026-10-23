@@ -4,8 +4,10 @@
 |---|---|---|---|---|
 | Artistas mais ouvidos | GET /me/top/artists | user-top-read | Sim (testado) | limit máx. 50; `genres` deprecated. Testado na #12 com conta real: 20 artistas, todos com imagem |
 | Busca de músicas | GET /search | nenhum | Sim (testado) | limit máx. 10 desde fev/2026 |
-| Criar playlist | POST /me/playlists | playlist-modify-public/private | Sim (doc) | Substituiu /users/{id}/playlists |
+| Criar playlist | POST /me/playlists | playlist-modify-public/private | Sim (doc) | Substituiu /users/{id}/playlists. Corpo: `name`, `public`, `description`. Na #30 a playlist é privada |
 | Adicionar músicas | POST /playlists/{id}/items | playlist-modify-public/private | Sim (doc) | Renomeado de /tracks |
+| Trocar as músicas | PUT /playlists/{id}/items | playlist-modify-public/private | Sim (doc) | Corpo `uris`; no máximo 100 itens por requisição |
+| Está na biblioteca? | GET /me/library/contains?uris=spotify:playlist:{id} | playlist-read-private | Sim (doc, conferido em 2026-10-23) | Devolve `[true]`/`[false]`; até 40 URIs. Substituiu os endpoints de followers |
 | Artista por id | GET /artists/{id} | nenhum | Sim (doc, conferido em 2026-10-22) | Substitui o `GET /artists` em lote, removido em fev/2026. Usado na #28 para o nome do artista |
 | Top tracks do artista | GET /artists/{id}/top-tracks | - | Não | Removido em fev/2026 |
 | Achar artista | GET /rest/1.0/search/artists | x-api-key | Sim (testado) | Retorna o mbid; ordenar por relevance |
@@ -22,6 +24,12 @@
 ## Atualização (Sprint 1, 2026-10-21)
 - `GET /me/top/artists` testado com conta real na #12: `time_range` short/medium/long e `images` (a mais larga primeiro) funcionam.
 - Além de `popularity` e `followers` (removidos), `genres` do artista aparece como deprecated na doc. A api não usa nenhum dos três.
+- **Apagar uma playlist no app do Spotify não apaga a playlist:** só a tira da biblioteca do usuário. Ela continua existindo e
+  `PUT /playlists/{id}/items` responde 200, não 404. Para saber se o usuário ainda tem a playlist, use `GET /me/library/contains`
+  (scope `playlist-read-private`, pedido a partir da #30: quem conectou antes reconecta uma vez).
+- A busca do Spotify respondeu **503** a títulos com `/`, `!`, `$` ou `.` dentro dos filtros `track:"…"`/`artist:"…"`
+  (Foo Fighters e Slayyyter, teste manual da #30). A query leva só letras, números e apóstrofo; a escolha da faixa compara os títulos reais.
+- 429 do Spotify vem com `Retry-After` (segundos). A api espera uma vez, se for curto; repetiu, 502.
 - O token do Spotify vence em 1 hora. A renovação pelo refresh token foi testada com WireMock; ainda falta ver acontecer com a conta real.
 
 ## Plano B

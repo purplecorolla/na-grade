@@ -148,7 +148,7 @@ class ConnectSpotifyIntegrationTest {
             .containsEntry("code_challenge_method", "S256")
             .containsKeys("state", "code_challenge")
         assertThat(authorization.getValue("scope").split(" "))
-            .containsExactlyInAnyOrder("user-top-read", "playlist-modify-public", "playlist-modify-private")
+            .containsExactlyInAnyOrder("user-top-read", "playlist-modify-public", "playlist-modify-private", "playlist-read-private")
 
         val returnUrl = callback(session, "code" to "fake-code", "state" to authorization.getValue("state"))
         assertThat(returnUrl).isEqualTo("/me/connections?connected=spotify")

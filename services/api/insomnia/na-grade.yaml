@@ -290,6 +290,47 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: "{{ _.baseUrl }}/artists/7jy3rLJdDQY21OgRLCZ9sD/playlist"
+        name: Generate playlist
+        meta:
+          id: req_nagrade_generate_playlist
+          created: 1792713600000
+          modified: 1792713600000
+          isPrivate: false
+          description: |-
+            Turns the predicted setlist into a private playlist in your Spotify. 201 when created, 200 when the same
+            artist + showDate is generated again (same playlist, songs replaced). notFound lists the songs not on Spotify.
+            422 no_recent_setlists / no_tracks_found; 401 provider_reconnect_required for connections made before #30.
+          sortKey: 233.8
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {"showDate": "2026-11-10"}
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: |-
+            insomnia.test('201/200 with the playlist, or 409/401 when Spotify must be (re)connected', () => {
+              const code = insomnia.response.code;
+              insomnia.expect([200, 201, 401, 409]).to.include(code);
+              if (code === 200 || code === 201) {
+                const body = insomnia.response.json();
+                insomnia.expect(body).to.have.all.keys('playlistId', 'url', 'name', 'created', 'tracks', 'notFound');
+                insomnia.expect(body.created).to.equal(code === 201);
+              } else {
+                insomnia.expect(['provider_not_connected', 'provider_reconnect_required']).to.include(insomnia.response.json().code);
+              }
+            });
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
       - url: "{{ _.baseUrl }}/me/connections/spotify"
         name: Disconnect Spotify
         meta:
